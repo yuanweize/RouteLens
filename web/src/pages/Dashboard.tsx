@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Select, Typography } from 'antd';
+import { Card, Col, Row, Statistic, Select, Typography, Collapse, Table, Tag, Space } from 'antd';
 import { useRequest } from 'ahooks';
 import { getHistory, getLatestTrace, getTargets } from '../api';
 import MapChart from '../components/MapChart';
@@ -39,6 +39,33 @@ const Dashboard: React.FC = () => {
   const lastSpeed = history.length
     ? history[history.length - 1].speed_down || history[history.length - 1].SpeedDown || 0
     : 0;
+
+  const traceData = React.useMemo(() => {
+    if (!trace) return null;
+    if (typeof trace === 'string') {
+      try {
+        return JSON.parse(trace);
+      } catch {
+        return null;
+      }
+    }
+    return trace;
+  }, [trace]);
+
+  const hopRows = (traceData?.hops || []).map((hop: any) => ({
+    key: hop.hop,
+    hop: hop.hop,
+    host: hop.host || hop.ip,
+    ip: hop.ip,
+    location: [hop.city, hop.country].filter(Boolean).join(', '),
+    isp: hop.isp,
+    loss: hop.loss,
+    last: hop.latency_last_ms,
+    avg: hop.latency_avg_ms,
+    best: hop.latency_best_ms,
+    worst: hop.latency_worst_ms,
+    asn: hop.asn,
+  }));
 
   return (
     <div>
@@ -81,6 +108,49 @@ const Dashboard: React.FC = () => {
             }
           >
             <MapChart trace={trace} isDark={isDark} />
+          </Card>
+          <Card className="chart-card" style={{ marginTop: 16 }}>
+            <Collapse
+              items={[
+                {
+                  key: 'hops',
+                  label: 'MTR Hop Details',
+                  children: (
+                    <Table
+                      size="small"
+                      dataSource={hopRows}
+                      pagination={false}
+                      columns={[
+                        { title: 'Hop #', dataIndex: 'hop', width: 70 },
+                        { title: 'IP/Host', dataIndex: 'host' },
+                        {
+                          title: 'Location (GeoIP)',
+                          render: (_, row: any) => (
+                            <div>
+                              <div>{row.location || '-'}</div>
+                              <Typography.Text type="secondary">{row.isp || ''}</Typography.Text>
+                            </div>
+                          ),
+                        },
+                        { title: 'Loss %', dataIndex: 'loss', render: (val: number) => (val === undefined || val === null ? 'N/A' : `${val}`) },
+                        {
+                          title: 'Latency (Last/Avg/Best/Worst)',
+                          render: (_, row: any) => (
+                            <Space>
+                              <Tag color="green">{row.last && row.last > 0 ? `${row.last}ms` : 'N/A'}</Tag>
+                              <Tag color="blue">{row.avg && row.avg > 0 ? `${row.avg}ms` : 'N/A'}</Tag>
+                              <Tag>{row.best && row.best > 0 ? `${row.best}ms` : 'N/A'}</Tag>
+                              <Tag>{row.worst && row.worst > 0 ? `${row.worst}ms` : 'N/A'}</Tag>
+                            </Space>
+                          ),
+                        },
+                        { title: 'ASN', dataIndex: 'asn', width: 120 },
+                      ]}
+                    />
+                  ),
+                },
+              ]}
+            />
           </Card>
         </Col>
         <Col span={8}>

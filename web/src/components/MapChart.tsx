@@ -35,17 +35,26 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
   const points = (traceData?.hops || [])
     .filter((h: any) => Number.isFinite(h.lon) && Number.isFinite(h.lat) && (h.lon !== 0 || h.lat !== 0))
     .map((h: any) => ({
-      name: h.ip,
+      name: h.host || h.ip,
       value: [h.lon, h.lat],
-      latency: h.latency_ms,
+      latency: h.latency_last_ms || h.latency_avg_ms || h.latency_ms || 0,
     }));
 
-  const lineCoords = points.map((p: any) => p.value);
-  const lines = lineCoords.length >= 2 ? [{
-    name: traceData?.target || 'trace',
-    coords: lineCoords,
-    lineStyle: { color: '#1677ff' },
-  }] : [];
+  const colorForLatency = (latency: number) => {
+    if (latency > 200) return '#ff4d4f';
+    if (latency > 100) return '#faad14';
+    return '#52c41a';
+  };
+
+  const segments = [] as any[];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const next = points[i + 1];
+    segments.push({
+      name: traceData?.target || 'trace',
+      coords: [points[i].value, next.value],
+      lineStyle: { color: colorForLatency(next.latency) },
+    });
+  }
 
   const option = {
     backgroundColor: 'transparent',
@@ -87,7 +96,7 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
           width: 0,
           curveness: 0.2,
         },
-        data: lines,
+        data: segments,
       },
       {
         type: 'lines',
@@ -101,7 +110,7 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
           opacity: 0.7,
           curveness: 0.2,
         },
-        data: lines,
+        data: segments,
       },
       {
         type: 'effectScatter',

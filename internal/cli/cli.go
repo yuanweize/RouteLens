@@ -137,6 +137,12 @@ func installService(force bool) {
 		log.Fatalf("Failed to get executable path: %v", err)
 	}
 	exeDir := filepath.Dir(exePath)
+	geoPath := os.Getenv("RS_GEOIP_PATH")
+
+	geoEnv := ""
+	if geoPath != "" {
+		geoEnv = fmt.Sprintf("Environment=RS_GEOIP_PATH=%s\n", geoPath)
+	}
 
 	serviceContent := fmt.Sprintf(`[Unit]
 Description=RouteLens Monitoring Service
@@ -150,10 +156,11 @@ ExecStart=%s --port %s --db %s
 Restart=always
 Environment=RS_HTTP_PORT=%s
 Environment=RS_DB_PATH=%s
+%s
 
 [Install]
 WantedBy=multi-user.target
-`, exeDir, exePath, port, dbPath, port, dbPath)
+`, exeDir, exePath, port, dbPath, port, dbPath, geoEnv)
 
 	servicePath := "/etc/systemd/system/routelens.service"
 	if !force {
