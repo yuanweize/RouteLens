@@ -9,6 +9,10 @@ import {
   AimOutlined,
   FileTextOutlined,
   HeartFilled,
+  CloudDownloadOutlined,
+  AppleOutlined,
+  WindowsOutlined,
+  LinuxOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
@@ -16,6 +20,9 @@ import { useTheme } from '../context/ThemeContext';
 const { Title, Text, Paragraph } = Typography;
 
 const GITHUB_URL = 'https://github.com/yuanweize/RouteLens';
+const LATEST_VERSION = 'v1.1.0';
+const RELEASES_URL = `${GITHUB_URL}/releases`;
+const DOWNLOAD_BASE = `${GITHUB_URL}/releases/download/${LATEST_VERSION}`;
 
 const About: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +35,14 @@ const About: React.FC = () => {
     { name: 'Ant Design v5', color: '#1677ff' },
     { name: 'ECharts', color: '#E43961' },
     { name: 'Vite', color: '#646CFF' },
+  ];
+
+  const downloads = [
+    { os: 'macOS', arch: 'Apple Silicon', icon: <AppleOutlined />, file: 'routelens-darwin-arm64', color: '#000' },
+    { os: 'macOS', arch: 'Intel', icon: <AppleOutlined />, file: 'routelens-darwin-amd64', color: '#555' },
+    { os: 'Linux', arch: 'x64', icon: <LinuxOutlined />, file: 'routelens-linux-amd64', color: '#FCC624' },
+    { os: 'Linux', arch: 'ARM64', icon: <LinuxOutlined />, file: 'routelens-linux-arm64', color: '#E95420' },
+    { os: 'Windows', arch: 'x64', icon: <WindowsOutlined />, file: 'routelens-windows-amd64.exe', color: '#0078D4' },
   ];
 
   const cardStyle: React.CSSProperties = {
@@ -182,6 +197,66 @@ const About: React.FC = () => {
                 {t('about.documentation')}
               </Button>
             </Space>
+          </Card>
+        </Col>
+
+        {/* Downloads / Releases */}
+        <Col xs={24}>
+          <Card
+            title={
+              <Space>
+                <CloudDownloadOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                <span>{t('about.downloads')}</span>
+                <Tag color="blue">{LATEST_VERSION}</Tag>
+              </Space>
+            }
+            extra={
+              <Button
+                type="link"
+                href={RELEASES_URL}
+                target="_blank"
+                icon={<GithubOutlined />}
+              >
+                {t('about.allReleases')}
+              </Button>
+            }
+            style={cardStyle}
+            hoverable
+          >
+            <Row gutter={[12, 12]}>
+              {downloads.map((dl) => (
+                <Col xs={24} sm={12} md={8} lg={4} key={dl.file}>
+                  <Button
+                    type="default"
+                    href={`${DOWNLOAD_BASE}/${dl.file}`}
+                    target="_blank"
+                    block
+                    style={{
+                      height: 'auto',
+                      padding: '12px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 4,
+                      borderRadius: 8,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = dl.color;
+                      e.currentTarget.style.color = dl.color;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '';
+                      e.currentTarget.style.color = '';
+                    }}
+                  >
+                    <span style={{ fontSize: 24 }}>{dl.icon}</span>
+                    <Text strong style={{ fontSize: 13 }}>{dl.os}</Text>
+                    <Text type="secondary" style={{ fontSize: 11 }}>{dl.arch}</Text>
+                  </Button>
+                </Col>
+              ))}
+            </Row>
           </Card>
         </Col>
 

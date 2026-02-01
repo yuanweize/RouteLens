@@ -120,6 +120,8 @@
     "repository": "GitHub Repository",
     "reportIssue": "Report Issue",
     "documentation": "Documentation",
+    "downloads": "Downloads",
+    "allReleases": "All Releases",
     "quickGuide": "Quick Start Guide",
     "guide": {
       "dashboard": "Dashboard",
