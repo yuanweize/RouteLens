@@ -1,52 +1,85 @@
-# RouteScope
+# RouteScope (RouteLens)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/yuanweize/RouteScope)](https://goreportcard.com/report/github.com/yuanweize/RouteScope)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**RouteScope** 是一个现代化的网络链路观测平台，专为监测从本地到远程服务器（如跨境 VPS）的链路质量而设计。它能够精确定位丢包节点，分析延迟波动，并安全地评估传输性能，帮助用户规避网络拥堵和流量审查。
+[🇨🇳 中文文档](README_CN.md) | [🇺🇸 English](README.md)
 
-**RouteScope** is a modern network link observation platform designed to monitor link quality from local environments to remote servers. It precisely pinpoints packet loss nodes, analyzes latency fluctuations, and safely evaluates transmission performance.
+**RouteScope (RouteLens)** is a modern, high-performance network observability platform designed to visualize the "black box" of internet routing.
 
-## 🌟 Core Features (核心功能)
+It empowers users to monitor latency, packet loss, and bandwidth quality between local nodes and remote servers in real-time. By leveraging MTR-style automated tracing and SSH side-channel speed testing, RouteScope helps you pinpoint exactly where network degradation occurs—whether it's the local ISP, international gateway, or the target datacenter.
 
-*   **🔍 Precision Route Tracking (精准路由追踪)**:
-    *   类似 MTR 的可视乎跳数分析。
-    *   集成 GeoIP，自动识别并高亮显示每一跳的国家、城市、ISP 信息。
-    *   Visual hop-by-hop analysis similar to MTR with GeoIP integration.
-*   **🛡️ Non-intrusive Monitoring (非侵入式监测)**:
-    *   **无需在服务端安装 Agent**。
-    *   利用 SSH/ICMP/TCP 协议进行被动探测。
-    *   **No Agent required on the server side**. Uses SSH/ICMP/TCP for passive probing.
-*   **📊 Stealth Speed Test (隐蔽测速)**:
-    *   模拟真实业务流量（SSH/SFTP），避免被识别为攻击。
-    *   支持“高频小包”模式，长期记录链路吞吐趋势。
-    *   Simulates real business traffic to avoid detection.
-*   **📈 Data Visualization (可视化看板)**:
-    *   基于 Web 的现代化仪表盘 (Recharts/ECharts)。
-    *   世界地图连线展示，多节点状态一目了然。
-*   **💾 Lightweight Storage (轻量存储)**:
-    *   内置 SQLite 数据库，无需额外部署复杂的数据库服务。
-    *   Built-in SQLite support, zero maintenance required.
+## 🌟 Key Features
 
-## 🚀 Getting Started
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yuanweize/RouteScope.git
-cd RouteScope
-
-# Run directly
-go run main.go
-```
+*   **🔍 Field-Tested MTR Tracing**: Visualize packet paths hop-by-hop using Native Go ICMP sockets.
+*   **🌍 GeoIP Integration**: Automatically resolve and map IP addresses to physical locations (City/Country/ISP).
+*   **🛡️ Stealth Speed Test**: Agentless bandwidth monitoring using SSH side-channels (`/dev/zero` -> SSH -> `/dev/null`), requiring **NO installation** on the target server.
+*   **💾 High-Performance Storage**: Built-in SQLite engine with WAL mode and JSON-based series storage for efficient long-term metrics.
+*   **📊 Web Dashboard (Coming Soon)**: Interactive World Map and React-based ECharts visualization.
 
 ## 🛠️ Architecture
 
-*   **Backend**: Go (Golang)
-*   **Frontend**: React / Vite
-*   **Database**: SQLite with WAL mode
-*   **Protocols**: ICMP, TCP, SSH (SFTP subsystem)
+```mermaid
+graph TD
+    User[User / Administrator] -->|Web UI| FE[React Frontend]
+    FE -->|API| BE[Go API Server]
+    
+    subgraph Core "Probe Engine"
+        ICMP[ICMP Pinger]
+        MTR[Traceroute Engine]
+        SSH[SSH Speed Tester]
+    end
+    
+    BE --> ICMP
+    BE --> MTR
+    BE --> SSH
+    
+    ICMP -->|Raw Socket| Network
+    MTR -->|Raw Socket| Network
+    SSH -->|Encrypted Tunnel| RemoteServer[Remote Target VPS]
+    
+    BE -->|GORM| DB[(SQLite DB)]
+    DB -->|JSON| FE
+```
+
+## 📂 Project Structure
+
+```text
+.
+├── cmd/
+│   └── probe_test/      # CLI verification tool for probing logic
+├── pkg/
+│   ├── prober/          # Core network engine (ICMP, Trace, SSH)
+│   ├── storage/         # SQLite persistence layer (GORM)
+│   └── geoip/           # MaxMind GeoLite2 wrapper
+├── internal/            # Private application logic
+└── .github/             # CI/CD workflows
+```
+
+## 🚀 Quick Start
+
+### Method 1: Pre-built Binary
+
+Download the latest release for your OS from the [Releases Page](https://github.com/yuanweize/RouteScope/releases).
+
+```bash
+# Verify connection
+sudo ./routescope-linux-amd64 -mode ping -target 1.1.1.1
+```
+
+### Method 2: Build from Source
+
+```bash
+# Clone
+git clone https://github.com/yuanweize/RouteScope.git
+cd RouteScope
+
+# Build
+go build -o routescope ./cmd/probe_test
+
+# Run (Traceroute requires root)
+sudo ./routescope -mode trace -target 8.8.8.8
+```
 
 ## License
 

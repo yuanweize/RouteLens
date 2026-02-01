@@ -1,0 +1,78 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build for ${{ matrix.os }}/${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            GOOS: linux
+            GOARCH: amd64
+          - os: linux
+            arch: arm64
+            GOOS: linux
+            GOARCH: arm64
+          - os: darwin
+            arch: amd64
+            GOOS: darwin
+            GOARCH: amd64
+          - os: darwin
+            arch: arm64
+            GOOS: darwin
+            GOARCH: arm64
+          - os: windows
+            arch: amd64
+            GOOS: windows
+            GOARCH: amd64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        check-latest: true
+
+    - name: Build Binary
+      env:
+        GOOS: ${{ matrix.GOOS }}
+        GOARCH: ${{ matrix.GOARCH }}
+        CGO_ENABLED: 1 # GORM/SQLite needs CGO
+      run: |
+        # Install Cross-compilation tools for SQLite
+        if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+          export CC=aarch64-linux-gnu-gcc
+        fi
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          sudo apt-get update && sudo apt-get install -y gcc-mingw-w64
+          export CC=x86_64-w64-mingw32-gcc
+        fi
+        
+        # Build
+        BINARY_NAME=routescope-${{ matrix.os }}-${{ matrix.arch }}
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          BINARY_NAME=${BINARY_NAME}.exe
+        fi
+        
+        go build -v -o build/$BINARY_NAME ./cmd/probe_test
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
