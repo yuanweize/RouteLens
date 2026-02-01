@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Typography, Row, Col, Tag, Button, Space, Divider, Steps } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Card, Typography, Row, Col, Tag, Button, Space, Divider, Steps, Spin } from 'antd';
 import {
   DeploymentUnitOutlined,
   GithubOutlined,
@@ -16,17 +16,37 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
+import { getSystemInfo, type SystemInfo } from '../api';
 
 const { Title, Text, Paragraph } = Typography;
 
 const GITHUB_URL = 'https://github.com/yuanweize/RouteLens';
-const LATEST_VERSION = 'v1.1.0';
 const RELEASES_URL = `${GITHUB_URL}/releases`;
-const DOWNLOAD_BASE = `${GITHUB_URL}/releases/download/${LATEST_VERSION}`;
 
 const About: React.FC = () => {
   const { t } = useTranslation();
   const { isDark } = useTheme();
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const info = await getSystemInfo();
+        setSystemInfo(info);
+      } catch (e) {
+        console.error('Failed to fetch system info:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInfo();
+  }, []);
+
+  // Dynamic version and download URL
+  const currentVersion = systemInfo?.version || 'latest';
+  // Use GitHub's "latest" redirect for downloads - always gets the newest release
+  const latestDownloadBase = `${GITHUB_URL}/releases/latest/download`;
 
   const techStack = [
     { name: 'Go 1.24', color: '#00ADD8' },
@@ -97,7 +117,7 @@ const About: React.FC = () => {
           </Title>
           <Space size="middle" style={{ marginBottom: 16 }}>
             <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
-              v1.1.0
+              {loading ? <Spin size="small" /> : `v${currentVersion.replace(/^v/, '')}`}
             </Tag>
             <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
               {t('about.license')}
@@ -207,7 +227,7 @@ const About: React.FC = () => {
               <Space>
                 <CloudDownloadOutlined style={{ fontSize: 18, color: '#1677ff' }} />
                 <span>{t('about.downloads')}</span>
-                <Tag color="blue">{LATEST_VERSION}</Tag>
+                <Tag color="blue">{loading ? '...' : `v${currentVersion.replace(/^v/, '')}`}</Tag>
               </Space>
             }
             extra={
@@ -228,7 +248,7 @@ const About: React.FC = () => {
                 <Col xs={24} sm={12} md={8} lg={4} key={dl.file}>
                   <Button
                     type="default"
-                    href={`${DOWNLOAD_BASE}/${dl.file}`}
+                    href={`${latestDownloadBase}/${dl.file}`}
                     target="_blank"
                     block
                     style={{

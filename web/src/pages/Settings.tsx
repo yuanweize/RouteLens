@@ -27,7 +27,19 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     fetchSystemInfo();
+    // Auto-check for updates on mount
+    handleCheckUpdateSilent();
   }, []);
+
+  // Silent update check (no messages)
+  const handleCheckUpdateSilent = async () => {
+    try {
+      const result = await checkUpdate();
+      setUpdateInfo(result);
+    } catch (e) {
+      console.error('Failed to check for updates:', e);
+    }
+  };
 
   const fetchSystemInfo = async () => {
     try {
