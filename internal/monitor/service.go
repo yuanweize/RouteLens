@@ -206,6 +206,7 @@ type sshProbeConfig struct {
 	User      string `json:"user"`
 	Password  string `json:"password"`
 	KeyPath   string `json:"key_path"`
+	KeyText   string `json:"key_text"`
 	Port      int    `json:"port"`
 	TestBytes int64  `json:"test_bytes"`
 }
@@ -230,6 +231,7 @@ func parseSSHConfig(raw string) (prober.SSHConfig, error) {
 		User:      cfg.User,
 		Password:  cfg.Password,
 		KeyPath:   cfg.KeyPath,
+		KeyText:   cfg.KeyText,
 		Port:      cfg.Port,
 		TestBytes: cfg.TestBytes,
 	}

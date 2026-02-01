@@ -18,6 +18,7 @@ type SSHConfig struct {
 	User      string
 	Password  string
 	KeyPath   string
+	KeyText   string
 	Timeout   time.Duration
 	TestBytes int64 // How many bytes to test. If 0, uses DefaultTestSize
 }
@@ -71,6 +72,12 @@ func (s *SSHSpeedTester) connect() (*ssh.Client, error) {
 	auths := []ssh.AuthMethod{}
 	if s.config.Password != "" {
 		auths = append(auths, ssh.Password(s.config.Password))
+	}
+	if s.config.KeyText != "" {
+		signer, err := ssh.ParsePrivateKey([]byte(s.config.KeyText))
+		if err == nil {
+			auths = append(auths, ssh.PublicKeys(signer))
+		}
 	}
 	if s.config.KeyPath != "" {
 		key, err := os.ReadFile(s.config.KeyPath)

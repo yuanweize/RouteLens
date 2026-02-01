@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arco-design/web-react": "^2.66.10",
+    "antd": "^5.27.0",
+    "@ant-design/icons": "^5.6.1",
+    "ahooks": "^3.9.5",
     "axios": "^1.13.4",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
