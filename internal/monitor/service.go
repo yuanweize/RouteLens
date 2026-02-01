@@ -112,12 +112,12 @@ func (s *Service) runSpeedCycle() {
 		}
 		speedTargets = append(speedTargets, target)
 	}
-	
+
 	if len(speedTargets) == 0 {
 		logging.Debug("speedtest", "No speed test targets configured (all targets are ICMP-only)")
 		return
 	}
-	
+
 	logging.Info("speedtest", "=== Starting speed test cycle for %d targets ===", len(speedTargets))
 	for _, target := range speedTargets {
 		logging.Info("speedtest", "Queuing speed test: %s (%s) [%s]", target.Name, target.Address, target.ProbeType)

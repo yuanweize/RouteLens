@@ -116,6 +116,7 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/api/v1/need-setup", s.handleNeedSetup)
 	s.router.POST("/api/v1/setup", s.handleSetup)
 	s.router.POST("/login", s.handleLogin)
+	s.router.GET("/api/v1/system/info", s.handleSystemInfo) // Public: version info is not sensitive
 
 	// Protected API
 	api := s.router.Group("/api/v1")
@@ -135,8 +136,7 @@ func (s *Server) setupRoutes() {
 		// System Logs
 		api.GET("/logs", s.handleGetLogs)
 
-		// System Update (Self-Update)
-		api.GET("/system/info", s.handleSystemInfo)
+		// System Update (Self-Update) - Protected
 		api.GET("/system/check-update", s.handleCheckUpdate)
 		api.POST("/system/update", s.handlePerformUpdate)
 	}
