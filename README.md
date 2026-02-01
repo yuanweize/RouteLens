@@ -40,9 +40,9 @@ graph TD
     MTR -->|Raw Socket| Network
     SSH -->|Encrypted Tunnel| RemoteServer[Remote Target VPS]
     
-    Core -->|Results (via Channel)| Writer[Async DB Writer]
-    Writer -->|Batch Insert| DB[(SQLite DB)]
-    DB -->|JSON Data| FE
+    Core -->|"Results (via Channel)"| Writer[Async DB Writer]
+    Writer -->|"Batch Insert"| DB[(SQLite DB)]
+    DB -->|"JSON Data"| FE
 ```
 
 ## 🚀 Deployment Strategy

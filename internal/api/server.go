@@ -66,8 +66,16 @@ func (s *Server) setupRoutes() {
 				c.JSON(http.StatusNotFound, gin.H{"error": "API route not found"})
 				return
 			}
-			// Serve index.html for everything else (SPA routes)
-			c.FileFromFS("index.html", http.FS(dist))
+
+			// Load index.html from embedded FS
+			indexHTML, err := fs.ReadFile(dist, "index.html")
+			if err != nil {
+				c.String(http.StatusInternalServerError, "Error loading index.html")
+				return
+			}
+
+			// Serve index.html with 200 OK for all SPA routes
+			c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 		})
 	}
 

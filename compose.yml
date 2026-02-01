@@ -1,0 +1,16 @@
+services:
+  routelens:
+    image: routelens:latest
+    build: .
+    container_name: routelens
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    restart: always
+
+# Note: Using network_mode: host for accurate MTR/Ping TTL control
