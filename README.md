@@ -29,6 +29,7 @@ RouteLens is a modern, agentless network observability platform that traces path
 - 🎨 **Modern UI**: Ant Design v5 with a dark mode algorithm.
 - 📊 **Historical Metrics**: Time-series trend charts for latency, loss, and speed.
 - 📦 **Single Binary**: One-file deployment with systemd support.
+- 🔄 **In-App Updates**: One-click update from Settings → About & Updates (AdGuard Home style).
 
 ## 🛠 Architecture
 
@@ -92,6 +93,22 @@ services:
 ├── pkg/          # Prober, storage, geoip
 └── web/          # React frontend (Vite)
 ```
+
+## 🔄 In-App Updates
+
+RouteLens supports one-click updates directly from the web UI, similar to AdGuard Home.
+
+**Requirements:**
+- The running process must have **write permission** to its own binary file
+- For systemd deployments, ensure the service user owns the binary
+
+**Usage:**
+1. Go to **Settings** → **About & Updates** tab
+2. Click **Check for Updates**
+3. If an update is available, click **Install Update**
+4. The service will automatically restart with the new version
+
+> **Note:** If using systemd, the service will exit after update and systemd will restart it automatically.
 
 ## License
 

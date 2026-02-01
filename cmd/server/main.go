@@ -10,6 +10,20 @@ import (
 	"github.com/yuanweize/RouteLens/web"
 )
 
+// Version information - set via ldflags at build time
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
+func init() {
+	// Inject version info into API package
+	api.Version = version
+	api.Commit = commit
+	api.BuildDate = date
+}
+
 func main() {
 	rootCmd := cli.NewRootCmd(runServer)
 	if err := rootCmd.Execute(); err != nil {

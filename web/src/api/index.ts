@@ -44,3 +44,35 @@ export const triggerProbe = (payload?: { target?: string }) => request.post('/ap
 
 export const getLogs = (params?: { lines?: number; level?: string }) =>
   request.get<{ logs: LogEntry[]; count: number }>('/api/v1/logs', { params });
+
+// System Update APIs
+export interface SystemInfo {
+  version: string;
+  commit: string;
+  build_date: string;
+  go_version: string;
+  os: string;
+  arch: string;
+}
+
+export interface UpdateCheckResult {
+  has_update: boolean;
+  current_version: string;
+  latest_version?: string;
+  release_notes?: string;
+  release_url?: string;
+  published_at?: string;
+}
+
+export interface UpdateResult {
+  message: string;
+  updated: boolean;
+  new_version?: string;
+  error?: string;
+}
+
+export const getSystemInfo = () => request.get<SystemInfo>('/api/v1/system/info');
+
+export const checkUpdate = () => request.get<UpdateCheckResult>('/api/v1/system/check-update');
+
+export const performUpdate = () => request.post<UpdateResult>('/api/v1/system/update');

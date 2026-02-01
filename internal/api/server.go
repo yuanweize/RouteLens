@@ -134,6 +134,11 @@ func (s *Server) setupRoutes() {
 
 		// System Logs
 		api.GET("/logs", s.handleGetLogs)
+
+		// System Update (Self-Update)
+		api.GET("/system/info", s.handleSystemInfo)
+		api.GET("/system/check-update", s.handleCheckUpdate)
+		api.POST("/system/update", s.handlePerformUpdate)
 	}
 }
 
