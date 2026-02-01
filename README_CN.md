@@ -3,12 +3,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/yuanweize/RouteScope)](https://goreportcard.com/report/github.com/yuanweize/RouteScope)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[🇨🇳 中文文档](README_CN.md) | [🇺🇸 English](README.md)
+[🇺🇸 English](README.md)
 
-> **现代化网络链路观测平台，支持延迟、丢包与带宽监控。**
-> **A modern network link observation platform for monitoring latency, packet loss, and bandwidth.**
-
-**RouteScope** 通过 PV (Path Visualization) 技术与 SSH 旁路测速机制，帮助用户实时监控从本地到目标服务器的延迟、丢包率与带宽质量。
+**RouteScope** 是一个现代化的网络链路观测平台。它通过 PV (Path Visualization) 技术与 SSH 旁路测速机制，帮助用户实时监控从本地到目标服务器的延迟、丢包率与带宽质量。
 
 通过 RouteScope，你可以像医生看 X 光片一样，精准定位网络拥堵是发生在本地 ISP、国际骨干网（如 CN2/9929）还是目标机房，从而彻底告别“网络玄学”。
 
@@ -27,7 +24,7 @@ graph TD
     User[用户 / 管理员] -->|Web 界面| FE[React 前端]
     FE -->|API 请求| BE[Go 后端服务]
     
-    subgraph Core "探测引擎 (Probe Engine)"
+    subgraph Core ["探测引擎 (Probe Engine)"]
         ICMP[ICMP 在线监测]
         MTR[MTR 路由追踪]
         SSH[SSH 带宽测速]
