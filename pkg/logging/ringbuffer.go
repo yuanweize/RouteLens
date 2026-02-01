@@ -54,12 +54,16 @@ func (rb *RingBuffer) Add(entry LogEntry) {
 
 // AddLog is a convenience method to add a log with level and message
 func (rb *RingBuffer) AddLog(level LogLevel, source, format string, args ...interface{}) {
-	rb.Add(LogEntry{
+	msg := fmt.Sprintf(format, args...)
+	entry := LogEntry{
 		Timestamp: time.Now(),
 		Level:     level,
-		Message:   fmt.Sprintf(format, args...),
+		Message:   msg,
 		Source:    source,
-	})
+	}
+	rb.Add(entry)
+	// Also print to stdout for journalctl visibility
+	fmt.Printf("[%s] %s: %s\n", level, source, msg)
 }
 
 // Info logs an info message

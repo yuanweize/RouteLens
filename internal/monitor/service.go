@@ -51,9 +51,17 @@ func (s *Service) refreshTargets() {
 
 func (s *Service) Start() {
 	s.pingTicker = time.NewTicker(30 * time.Second)
-	s.speedTicker = time.NewTicker(30 * time.Minute) // More frequent speed tests
+	s.speedTicker = time.NewTicker(5 * time.Minute) // Speed tests every 5 minutes
 	s.refreshTicker = time.NewTicker(1 * time.Minute)
 	s.heartbeatTicker = time.NewTicker(60 * time.Second) // Heartbeat every 60s
+
+	// Run initial cycles immediately on startup
+	go func() {
+		time.Sleep(2 * time.Second) // Wait for service to fully initialize
+		logging.Info("monitor", "Running initial probe cycle on startup...")
+		s.runPingTraceCycle()
+		s.runSpeedCycle()
+	}()
 
 	go s.runLoop()
 }
@@ -97,16 +105,23 @@ func (s *Service) runPingTraceCycle() {
 }
 
 func (s *Service) runSpeedCycle() {
-	speedTargets := 0
+	speedTargets := []storage.Target{}
 	for _, target := range s.targets {
 		if target.ProbeType == storage.ProbeModeICMP || target.ProbeType == "" {
 			continue // No speed test for ICMP only mode
 		}
-		speedTargets++
-		go s.runSpeedForTarget(target)
+		speedTargets = append(speedTargets, target)
 	}
-	if speedTargets > 0 {
-		logging.Info("monitor", "Starting speed test cycle for %d targets", speedTargets)
+	
+	if len(speedTargets) == 0 {
+		logging.Debug("speedtest", "No speed test targets configured (all targets are ICMP-only)")
+		return
+	}
+	
+	logging.Info("speedtest", "=== Starting speed test cycle for %d targets ===", len(speedTargets))
+	for _, target := range speedTargets {
+		logging.Info("speedtest", "Queuing speed test: %s (%s) [%s]", target.Name, target.Address, target.ProbeType)
+		go s.runSpeedForTarget(target)
 	}
 }
 
@@ -163,18 +178,21 @@ func (s *Service) runSpeedForTarget(t storage.Target) {
 	var err error
 	var configErr error
 
-	logging.Info("speedtest", "Starting %s speed test for %s (%s)", t.ProbeType, t.Name, t.Address)
+	logging.Info("speedtest", "[%s] >>> Starting speed test for %s (%s)", t.ProbeType, t.Name, t.Address)
 
 	switch t.ProbeType {
 	case storage.ProbeModeSSH:
+		logging.Info("speedtest", "[SSH] Parsing SSH config for %s...", t.Name)
 		sshCfg, cfgErr := parseSSHConfig(t.ProbeConfig)
 		if cfgErr != nil {
 			configErr = cfgErr
 			log.Printf("Invalid SSH config for %s: %v", t.Name, cfgErr)
+			logging.Error("speedtest", "[SSH] Invalid config for %s: %v", t.Name, cfgErr)
 			s.db.UpdateTargetError(t.Address, fmt.Sprintf("Config error: %v", cfgErr))
 			return
 		}
 		sshCfg.Host = t.Address
+		logging.Info("speedtest", "[SSH] Connecting to %s@%s:%d...", sshCfg.User, sshCfg.Host, sshCfg.Port)
 		runner := prober.NewSSHSpeedTester(sshCfg)
 		speedRes, err = runner.Run()
 
