@@ -21,6 +21,11 @@ type Target struct {
 	// ProbeConfig (JSON stored as text for flexibility)
 	// Includes URL for HTTP, Port for Iperf, Credentials for SSH
 	ProbeConfig string `gorm:"column:probe_config;type:text" json:"probe_config"`
+
+	// --- Error Tracking (Phase Polish) ---
+	// LastError stores the most recent probe error message
+	LastError   string     `gorm:"column:last_error;type:text" json:"last_error"`
+	LastErrorAt *time.Time `gorm:"column:last_error_at" json:"last_error_at"`
 }
 
 // User represents a system administrator

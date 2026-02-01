@@ -72,6 +72,27 @@ func (d *DB) GetTargets(onlyEnabled bool) ([]Target, error) {
 	return targets, err
 }
 
+// UpdateTargetError updates the last_error and last_error_at fields for a target
+func (d *DB) UpdateTargetError(address string, errMsg string) error {
+	now := time.Now()
+	return d.conn.Model(&Target{}).
+		Where("address = ?", address).
+		Updates(map[string]interface{}{
+			"last_error":    errMsg,
+			"last_error_at": now,
+		}).Error
+}
+
+// ClearTargetError clears the error fields for a target (on successful probe)
+func (d *DB) ClearTargetError(address string) error {
+	return d.conn.Model(&Target{}).
+		Where("address = ?", address).
+		Updates(map[string]interface{}{
+			"last_error":    "",
+			"last_error_at": nil,
+		}).Error
+}
+
 // --- User Management (Phase 13) ---
 
 func (d *DB) GetUser(username string) (*User, error) {

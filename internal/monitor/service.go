@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/yuanweize/RouteLens/pkg/geoip"
+	"github.com/yuanweize/RouteLens/pkg/logging"
 	"github.com/yuanweize/RouteLens/pkg/prober"
 	"github.com/yuanweize/RouteLens/pkg/storage"
 )
@@ -64,6 +65,7 @@ func (s *Service) Stop() {
 
 func (s *Service) runLoop() {
 	log.Println("Monitor Service Started")
+	logging.Info("monitor", "Monitor Service Started")
 	for {
 		select {
 		case <-s.pingTicker.C:
@@ -74,6 +76,7 @@ func (s *Service) runLoop() {
 			s.refreshTargets()
 		case <-s.stopChan:
 			log.Println("Monitor Service Stopped")
+			logging.Info("monitor", "Monitor Service Stopped")
 			return
 		}
 	}
@@ -104,6 +107,7 @@ func (s *Service) runPingTraceForTarget(t storage.Target) {
 	pingRes, err := pinger.Run()
 	if err != nil {
 		log.Printf("Ping failed for %s: %v", t.Name, err)
+		logging.Warn("probe", "Ping failed for %s: %v", t.Name, err)
 		return
 	}
 
@@ -143,12 +147,15 @@ func (s *Service) runPingTraceForTarget(t storage.Target) {
 func (s *Service) runSpeedForTarget(t storage.Target) {
 	var speedRes *prober.SpeedResult
 	var err error
+	var configErr error
 
 	switch t.ProbeType {
 	case storage.ProbeModeSSH:
 		sshCfg, cfgErr := parseSSHConfig(t.ProbeConfig)
 		if cfgErr != nil {
+			configErr = cfgErr
 			log.Printf("Invalid SSH config for %s: %v", t.Name, cfgErr)
+			s.db.UpdateTargetError(t.Address, fmt.Sprintf("Config error: %v", cfgErr))
 			return
 		}
 		sshCfg.Host = t.Address
@@ -158,7 +165,9 @@ func (s *Service) runSpeedForTarget(t storage.Target) {
 	case storage.ProbeModeHTTP:
 		url, cfgErr := parseHTTPConfig(t.ProbeConfig)
 		if cfgErr != nil {
+			configErr = cfgErr
 			log.Printf("Invalid HTTP config for %s: %v", t.Name, cfgErr)
+			s.db.UpdateTargetError(t.Address, fmt.Sprintf("Config error: %v", cfgErr))
 			return
 		}
 		runner := prober.NewHTTPSpeedTester(url)
@@ -168,7 +177,9 @@ func (s *Service) runSpeedForTarget(t storage.Target) {
 		port := 5201
 		cfgPort, cfgErr := parseIperfConfig(t.ProbeConfig)
 		if cfgErr != nil {
+			configErr = cfgErr
 			log.Printf("Invalid IPERF config for %s: %v", t.Name, cfgErr)
+			s.db.UpdateTargetError(t.Address, fmt.Sprintf("Config error: %v", cfgErr))
 			return
 		}
 		if cfgPort != 0 {
@@ -178,9 +189,31 @@ func (s *Service) runSpeedForTarget(t storage.Target) {
 		speedRes, err = runner.Run()
 	}
 
+	// Handle probe errors - store them for UI display
 	if err != nil {
+		errMsg := err.Error()
+		// Categorize common SSH errors for better UX
+		if strings.Contains(errMsg, "ssh") || strings.Contains(errMsg, "SSH") {
+			if strings.Contains(errMsg, "handshake") || strings.Contains(errMsg, "key") {
+				errMsg = "SSH: Authentication failed - check credentials/key"
+			} else if strings.Contains(errMsg, "connection refused") {
+				errMsg = "SSH: Connection refused - check host/port"
+			} else if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "i/o timeout") {
+				errMsg = "SSH: Connection timeout - host unreachable"
+			}
+		}
 		log.Printf("Speed test failed for %s (%s): %v", t.Name, t.ProbeType, err)
+		logging.Error("speedtest", "Speed test failed for %s (%s): %v", t.Name, t.ProbeType, err)
+		s.db.UpdateTargetError(t.Address, errMsg)
 		return
+	}
+
+	// Clear error on success and log
+	if configErr == nil && err == nil {
+		s.db.ClearTargetError(t.Address)
+		if speedRes != nil {
+			logging.Info("speedtest", "Speed test completed for %s: Down=%.1f Mbps, Up=%.1f Mbps", t.Name, speedRes.DownloadSpeed, speedRes.UploadSpeed)
+		}
 	}
 
 	if speedRes != nil {
@@ -294,13 +327,19 @@ type traceHop struct {
 	LatencyWorstMs float64 `json:"latency_worst_ms,omitempty"`
 	Loss           float64 `json:"loss"`
 	ASN            string  `json:"asn,omitempty"`
-	City           string  `json:"city,omitempty"`
-	Subdiv         string  `json:"subdiv,omitempty"`
-	Country        string  `json:"country,omitempty"`
-	ISP            string  `json:"isp,omitempty"`
-	Latitude       float64 `json:"lat,omitempty"`
-	Longitude      float64 `json:"lon,omitempty"`
-	GeoPrecision   string  `json:"geo_precision,omitempty"`
+	// Location fields - primary (zh-CN with fallback to en)
+	City    string `json:"city,omitempty"`
+	Subdiv  string `json:"subdiv,omitempty"`
+	Country string `json:"country,omitempty"`
+	// Location fields - English (for i18n support)
+	CityEN    string  `json:"city_en,omitempty"`
+	SubdivEN  string  `json:"subdiv_en,omitempty"`
+	CountryEN string  `json:"country_en,omitempty"`
+	ISP       string  `json:"isp,omitempty"`
+	Latitude  float64 `json:"lat,omitempty"`
+	Longitude float64 `json:"lon,omitempty"`
+	// Precision indicates the accuracy of the geo data
+	GeoPrecision string `json:"geo_precision,omitempty"`
 }
 
 type tracePayload struct {
@@ -373,9 +412,15 @@ func (s *Service) enrichHopGeo(th *traceHop) {
 		return
 	}
 	if loc, err := s.geoProvider.Lookup(th.IP); err == nil {
+		// Primary fields (zh-CN with fallback)
 		th.City = loc.City
 		th.Subdiv = loc.Subdiv
 		th.Country = loc.Country
+		// English fields for i18n
+		th.CityEN = loc.CityEN
+		th.SubdivEN = loc.SubdivEN
+		th.CountryEN = loc.CountryEN
+		// Other fields
 		th.ISP = loc.ISP
 		th.Latitude = loc.Latitude
 		th.Longitude = loc.Longitude

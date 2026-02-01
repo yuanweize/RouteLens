@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Select, Typography, Collapse, Table, Tag, Space } from 'antd';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, Col, Row, Statistic, Select, Typography, Collapse, Table, Tag, Space, Tooltip } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
+import { useTranslation } from 'react-i18next';
 import { getHistory, getLatestTrace, getTargets } from '../api';
+import type { Target } from '../api';
 import MapChart from '../components/MapChart';
 import MetricsChart from '../components/MetricsChart';
 import { useTheme } from '../context/ThemeContext';
@@ -27,10 +30,17 @@ interface HopRow {
 
 const Dashboard: React.FC = () => {
   const { isDark } = useTheme();
+  const { t, i18n } = useTranslation();
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [trace, setTrace] = useState<any>(null);
 
   const { data: targets = [] } = useRequest(getTargets);
+
+  // Find the selected target metadata (for error display)
+  const selectedMeta: Target | undefined = useMemo(
+    () => targets.find((t: Target) => t.address === selectedTarget),
+    [targets, selectedTarget]
+  );
 
   useEffect(() => {
     if (targets.length > 0 && !selectedTarget) {
@@ -59,7 +69,25 @@ const Dashboard: React.FC = () => {
     ? history[history.length - 1].speed_down || history[history.length - 1].SpeedDown || 0
     : 0;
 
-  const traceData = React.useMemo(() => {
+  // Speed test status indicator
+  const isSpeedEnabled = selectedMeta && selectedMeta.probe_type !== 'MODE_ICMP' && selectedMeta.probe_type !== '';
+  const hasSpeedError = isSpeedEnabled && selectedMeta?.last_error;
+  const speedStatusIcon = useMemo(() => {
+    if (!isSpeedEnabled) return null;
+    if (lastSpeed > 0) {
+      return <CheckCircleOutlined style={{ color: '#52c41a', marginLeft: 8 }} />;
+    }
+    if (hasSpeedError) {
+      return (
+        <Tooltip title={selectedMeta?.last_error} color="red">
+          <CloseCircleOutlined style={{ color: '#ff4d4f', marginLeft: 8, cursor: 'help' }} />
+        </Tooltip>
+      );
+    }
+    return <MinusCircleOutlined style={{ color: '#faad14', marginLeft: 8 }} />;
+  }, [isSpeedEnabled, lastSpeed, hasSpeedError, selectedMeta?.last_error]);
+
+  const traceData = useMemo(() => {
     if (!trace) return null;
     if (typeof trace === 'string') {
       try {
@@ -71,11 +99,26 @@ const Dashboard: React.FC = () => {
     return trace;
   }, [trace]);
 
+  // Format location based on current language
+  const formatLocation = (hop: any) => {
+    const lang = i18n.language;
+    if (lang === 'zh-CN' || lang === 'zh') {
+      // Chinese: use default fields (already zh-CN or fallback)
+      return [hop.city, hop.subdiv, hop.country].filter(Boolean).join(', ');
+    } else {
+      // English: prefer *_en fields if available
+      const city = hop.city_en || hop.city;
+      const subdiv = hop.subdiv_en || hop.subdiv;
+      const country = hop.country_en || hop.country;
+      return [city, subdiv, country].filter(Boolean).join(', ');
+    }
+  };
+
   const renderLatencyTag = (value: any, color?: string) => {
     if (typeof value === 'number' && value > 0) {
       return <Tag color={color}>{`${value.toFixed(1)}ms`}</Tag>;
     }
-    return <Typography.Text type="secondary" style={{ fontSize: 12 }}>N/A</Typography.Text>;
+    return <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t('common.na')}</Typography.Text>;
   };
 
   const renderLoss = (value: any) => {
@@ -83,7 +126,7 @@ const Dashboard: React.FC = () => {
       const color = value > 50 ? '#ff4d4f' : value > 10 ? '#faad14' : undefined;
       return <span style={{ color }}>{value.toFixed(1)}%</span>;
     }
-    return <Typography.Text type="secondary">N/A</Typography.Text>;
+    return <Typography.Text type="secondary">{t('common.na')}</Typography.Text>;
   };
 
   const hopRows: HopRow[] = (traceData?.hops || []).map((hop: any) => {
@@ -93,7 +136,7 @@ const Dashboard: React.FC = () => {
       hop: hop.hop,
       host: hop.host || hop.ip,
       ip: hop.ip,
-      location: [hop.city, hop.subdiv, hop.country].filter(Boolean).join(', '),
+      location: formatLocation(hop),
       subdiv: hop.subdiv || '',
       isp: hop.isp,
       loss: hop.loss,
@@ -108,9 +151,9 @@ const Dashboard: React.FC = () => {
   });
 
   const hopColumns: ColumnsType<HopRow> = [
-    { title: '#', dataIndex: 'hop', width: 50, align: 'center' },
+    { title: t('hopTable.hop'), dataIndex: 'hop', width: 50, align: 'center' },
     {
-      title: 'IP / Host',
+      title: t('hopTable.ipHost'),
       dataIndex: 'host',
       width: 200,
       ellipsis: true,
@@ -121,18 +164,18 @@ const Dashboard: React.FC = () => {
       ),
     },
     {
-      title: 'Location',
+      title: t('hopTable.location'),
       width: 220,
       render: (_: any, row: HopRow) => (
         <div style={{ opacity: row.isTimeout ? 0.4 : 1 }}>
           <div>{row.location || '-'}</div>
           {row.isp && <Typography.Text type="secondary" style={{ fontSize: 11 }}>{row.isp}</Typography.Text>}
-          {row.geoPrecision === 'country' && <Tag color="orange" style={{ marginLeft: 4, fontSize: 10 }}>Country Only</Tag>}
+          {row.geoPrecision === 'country' && <Tag color="orange" style={{ marginLeft: 4, fontSize: 10 }}>{t('hopTable.countryOnly')}</Tag>}
         </div>
       ),
     },
     {
-      title: 'Loss',
+      title: t('hopTable.loss'),
       dataIndex: 'loss',
       width: 80,
       align: 'right',
@@ -141,7 +184,7 @@ const Dashboard: React.FC = () => {
       ),
     },
     {
-      title: 'Latency',
+      title: t('hopTable.latency'),
       width: 280,
       render: (_: any, row: HopRow) => (
         <Space style={{ opacity: row.isTimeout ? 0.4 : 1 }}>
@@ -153,7 +196,7 @@ const Dashboard: React.FC = () => {
       ),
     },
     {
-      title: 'ASN',
+      title: t('hopTable.asn'),
       dataIndex: 'asn',
       width: 100,
       render: (val: string, row: HopRow) => (
@@ -166,24 +209,37 @@ const Dashboard: React.FC = () => {
     <div>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={24}>
-          <Typography.Title level={4} style={{ margin: 0 }}>Dashboard</Typography.Title>
+          <Typography.Title level={4} style={{ margin: 0 }}>{t('dashboard.title')}</Typography.Title>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
         <Col span={8}>
           <Card className="page-card">
-            <Statistic title="Avg Latency" value={avgLatency} suffix="ms" precision={1} />
+            <Statistic title={t('dashboard.avgLatency')} value={avgLatency} suffix="ms" precision={1} />
           </Card>
         </Col>
         <Col span={8}>
           <Card className="page-card">
-            <Statistic title="Packet Loss" value={avgLoss} suffix="%" precision={2} />
+            <Statistic title={t('dashboard.packetLoss')} value={avgLoss} suffix="%" precision={2} />
           </Card>
         </Col>
         <Col span={8}>
           <Card className="page-card">
-            <Statistic title="Downlink" value={lastSpeed} suffix="Mbps" precision={1} />
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Statistic
+                title={t('dashboard.downlink')}
+                value={isSpeedEnabled ? lastSpeed : t('common.na')}
+                suffix={isSpeedEnabled ? 'Mbps' : ''}
+                precision={1}
+              />
+              {speedStatusIcon}
+            </div>
+            {hasSpeedError && (
+              <Typography.Text type="danger" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                {selectedMeta?.last_error}
+              </Typography.Text>
+            )}
           </Card>
         </Col>
       </Row>
@@ -192,13 +248,13 @@ const Dashboard: React.FC = () => {
         <Col span={16}>
           <Card
             className="chart-card"
-            title="Route Map"
+            title={t('dashboard.routeMap')}
             extra={
               <Select
                 style={{ width: 240 }}
                 value={selectedTarget}
                 onChange={setSelectedTarget}
-                options={targets.map((t) => ({ label: `${t.name} (${t.address})`, value: t.address }))}
+                options={targets.map((tgt: Target) => ({ label: `${tgt.name} (${tgt.address})`, value: tgt.address }))}
               />
             }
           >
@@ -212,8 +268,8 @@ const Dashboard: React.FC = () => {
                   key: 'hops',
                   label: (
                     <Space>
-                      <span>MTR Hop Details</span>
-                      {traceData?.truncated ? <Tag color="orange">Truncated</Tag> : null}
+                      <span>{t('dashboard.mtrHopDetails')}</span>
+                      {traceData?.truncated ? <Tag color="orange">{t('dashboard.truncated')}</Tag> : null}
                     </Space>
                   ),
                   children: (
@@ -232,7 +288,7 @@ const Dashboard: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card className="chart-card" title="Historical Metrics">
+          <Card className="chart-card" title={t('dashboard.historicalMetrics')}>
             <MetricsChart history={history} isDark={isDark} />
           </Card>
         </Col>

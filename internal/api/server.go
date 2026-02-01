@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/yuanweize/RouteLens/internal/auth"
 	"github.com/yuanweize/RouteLens/internal/monitor"
+	"github.com/yuanweize/RouteLens/pkg/logging"
 	"github.com/yuanweize/RouteLens/pkg/storage"
 )
 
@@ -129,6 +130,9 @@ func (s *Server) setupRoutes() {
 		api.GET("/targets", s.handleGetTargets)
 		api.POST("/targets", s.handleSaveTarget)
 		api.DELETE("/targets/:id", s.handleDeleteTarget)
+
+		// System Logs
+		api.GET("/logs", s.handleGetLogs)
 	}
 }
 
@@ -379,4 +383,50 @@ func (s *Server) handleDeleteTarget(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Target deleted"})
+}
+
+func (s *Server) handleGetLogs(c *gin.Context) {
+	// Parse query parameters
+	linesStr := c.DefaultQuery("lines", "100")
+	lines, _ := strconv.Atoi(linesStr)
+	if lines <= 0 || lines > 1000 {
+		lines = 100
+	}
+
+	levelFilter := c.Query("level") // e.g., "ERROR", "WARN,ERROR"
+
+	logger := logging.GetGlobalLogger()
+	var entries []logging.LogEntry
+
+	if levelFilter != "" {
+		// Parse comma-separated levels
+		levelStrs := strings.Split(levelFilter, ",")
+		var levels []logging.LogLevel
+		for _, ls := range levelStrs {
+			ls = strings.TrimSpace(strings.ToUpper(ls))
+			switch ls {
+			case "DEBUG":
+				levels = append(levels, logging.LevelDebug)
+			case "INFO":
+				levels = append(levels, logging.LevelInfo)
+			case "WARN":
+				levels = append(levels, logging.LevelWarn)
+			case "ERROR":
+				levels = append(levels, logging.LevelError)
+			}
+		}
+		entries = logger.GetByLevel(levels...)
+	} else {
+		entries = logger.GetLast(lines)
+	}
+
+	// Return only the last N entries after filtering
+	if len(entries) > lines {
+		entries = entries[len(entries)-lines:]
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"logs":  entries,
+		"count": len(entries),
+	})
 }

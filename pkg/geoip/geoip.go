@@ -7,15 +7,24 @@ import (
 	"github.com/oschwald/geoip2-golang"
 )
 
+// Supported language codes
+const (
+	LangEnglish = "en"
+	LangChinese = "zh-CN"
+)
+
 type Location struct {
-	City      string
-	Subdiv    string // Province/State
-	Country   string
-	ISOCode   string
-	ISP       string
-	Latitude  float64
-	Longitude float64
-	Precision string // "city", "subdivision", "country", "none"
+	City      string  `json:"city"`
+	CityEN    string  `json:"city_en"`    // English name for localization
+	Subdiv    string  `json:"subdiv"`     // Province/State
+	SubdivEN  string  `json:"subdiv_en"`  // English subdivision
+	Country   string  `json:"country"`
+	CountryEN string  `json:"country_en"` // English country
+	ISOCode   string  `json:"iso_code"`
+	ISP       string  `json:"isp"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Precision string  `json:"precision"` // "city", "subdivision", "country", "none"
 }
 
 type Provider struct {
@@ -46,6 +55,9 @@ func NewProvider(cityDBPath, ispDBPath string) (*Provider, error) {
 	return p, nil
 }
 
+// Lookup returns location data with both Chinese and English names
+// The primary fields (City, Subdiv, Country) use Chinese if available, else English
+// The *EN fields always contain English names for API consumers to choose
 func (p *Provider) Lookup(ipStr string) (*Location, error) {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
@@ -57,34 +69,40 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 	if p.cityDB != nil {
 		record, err := p.cityDB.City(ip)
 		if err == nil {
-			// Try City first (highest precision)
+			// Get both language versions for each field
+			// City
+			loc.CityEN = record.City.Names["en"]
 			loc.City = record.City.Names["zh-CN"]
 			if loc.City == "" {
-				loc.City = record.City.Names["en"]
+				loc.City = loc.CityEN // Fallback to English
 			}
 
-			// Try Subdivision (Province/State) as fallback
+			// Subdivision (Province/State)
 			if len(record.Subdivisions) > 0 {
+				loc.SubdivEN = record.Subdivisions[0].Names["en"]
 				loc.Subdiv = record.Subdivisions[0].Names["zh-CN"]
 				if loc.Subdiv == "" {
-					loc.Subdiv = record.Subdivisions[0].Names["en"]
+					loc.Subdiv = loc.SubdivEN
 				}
 			}
 
+			// Country
+			loc.CountryEN = record.Country.Names["en"]
 			loc.Country = record.Country.Names["zh-CN"]
 			if loc.Country == "" {
-				loc.Country = record.Country.Names["en"]
+				loc.Country = loc.CountryEN
 			}
+
 			loc.ISOCode = record.Country.IsoCode
 			loc.Latitude = record.Location.Latitude
 			loc.Longitude = record.Location.Longitude
 
 			// Determine precision level
-			if loc.City != "" {
+			if loc.City != "" || loc.CityEN != "" {
 				loc.Precision = "city"
-			} else if loc.Subdiv != "" {
+			} else if loc.Subdiv != "" || loc.SubdivEN != "" {
 				loc.Precision = "subdivision"
-			} else if loc.Country != "" {
+			} else if loc.Country != "" || loc.CountryEN != "" {
 				loc.Precision = "country"
 			} else {
 				loc.Precision = "none"

@@ -1,0 +1,142 @@
+{
+  "common": {
+    "appName": "RouteLens",
+    "version": "v1.1.0",
+    "logout": "退出登录",
+    "profile": "个人资料",
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "confirm": "确认",
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "yes": "是",
+    "no": "否",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "actions": "操作",
+    "status": "状态",
+    "na": "N/A"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "targets": "监控目标",
+    "settings": "设置",
+    "about": "关于",
+    "logs": "系统日志"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "console": "RouteLens 控制台",
+    "avgLatency": "平均延迟",
+    "packetLoss": "丢包率",
+    "downlink": "下行带宽",
+    "uplink": "上行带宽",
+    "routeMap": "路由地图",
+    "mtrHopDetails": "MTR 跳数详情",
+    "truncated": "已截断",
+    "historicalMetrics": "历史数据",
+    "selectTarget": "选择目标",
+    "probeNow": "立即探测"
+  },
+  "hopTable": {
+    "hop": "#",
+    "ipHost": "IP / 主机名",
+    "location": "位置",
+    "loss": "丢包",
+    "latency": "延迟",
+    "asn": "ASN",
+    "countryOnly": "仅国家"
+  },
+  "targets": {
+    "title": "监控目标",
+    "newTarget": "新建目标",
+    "editTarget": "编辑目标",
+    "name": "名称",
+    "hostIp": "主机/IP",
+    "probeType": "探测类型",
+    "description": "描述",
+    "probeTypes": {
+      "icmp": "ICMP (Ping/MTR)",
+      "http": "HTTP 下载测速",
+      "ssh": "SSH 带宽测试",
+      "iperf": "iPerf3"
+    },
+    "sshUser": "SSH 用户名",
+    "sshPort": "SSH 端口",
+    "sshKeyPath": "SSH 密钥路径",
+    "sshKeyText": "SSH 密钥内容",
+    "uploadKey": "上传 SSH 密钥",
+    "httpUrl": "HTTP URL",
+    "iperfPort": "iPerf 端口",
+    "confirmDelete": "确定要删除此监控目标吗？"
+  },
+  "settings": {
+    "title": "设置",
+    "changePassword": "修改密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认密码",
+    "passwordUpdated": "密码修改成功",
+    "theme": "主题",
+    "lightMode": "浅色模式",
+    "darkMode": "深色模式",
+    "language": "语言"
+  },
+  "logs": {
+    "title": "系统日志",
+    "levelFilter": "日志级别",
+    "allLevels": "全部级别",
+    "refresh": "刷新",
+    "clear": "清空",
+    "noLogs": "暂无日志",
+    "lines": "行数"
+  },
+  "login": {
+    "title": "登录",
+    "username": "用户名",
+    "password": "密码",
+    "submit": "登录",
+    "invalidCredentials": "用户名或密码错误"
+  },
+  "setup": {
+    "title": "初始化设置",
+    "subtitle": "创建管理员账户",
+    "username": "管理员用户名",
+    "password": "管理员密码",
+    "submit": "完成设置"
+  },
+  "about": {
+    "title": "关于",
+    "description": "RouteLens 是一款自托管的网络路由监控与可视化工具。",
+    "features": "功能特性",
+    "featureList": [
+      "基于 MTR 的实时路由追踪",
+      "世界地图上的 GeoIP 可视化",
+      "多协议带宽测试 (SSH/HTTP/iPerf)",
+      "历史数据与趋势分析"
+    ],
+    "github": "GitHub 仓库",
+    "license": "MIT 开源协议"
+  },
+  "errors": {
+    "networkError": "网络错误，请重试",
+    "unauthorized": "会话已过期，请重新登录",
+    "serverError": "服务器错误",
+    "probeError": "探测错误",
+    "idle": "空闲",
+    "sshAuthFailed": "SSH: 认证失败",
+    "sshConnectionRefused": "SSH: 连接被拒绝",
+    "sshTimeout": "SSH: 连接超时"
+  },
+  "speedStatus": {
+    "ok": "正常",
+    "error": "错误",
+    "idle": "空闲",
+    "testing": "测试中..."
+  }
+}

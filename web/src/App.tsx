@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ConfigProvider, theme } from 'antd';
+import enUS from 'antd/locale/en_US';
+import zhCN from 'antd/locale/zh_CN';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { checkNeedSetup } from './api';
 import AppLayout from './components/AppLayout';
 import { ThemeProvider } from './context/ThemeContext';
@@ -10,9 +13,11 @@ import Dashboard from './pages/Dashboard';
 import Targets from './pages/Targets';
 import Settings from './pages/Settings';
 import About from './pages/About';
+import Logs from './pages/Logs';
 
 const App: React.FC = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [isDark, setIsDark] = useState(false);
   const [checking, setChecking] = useState(true);
 
@@ -42,12 +47,19 @@ const App: React.FC = () => {
 
   const algorithm = useMemo(() => (isDark ? theme.darkAlgorithm : theme.defaultAlgorithm), [isDark]);
 
+  // Determine Ant Design locale based on i18n language
+  const antdLocale = useMemo(() => {
+    const lang = i18n.language;
+    if (lang === 'zh-CN' || lang === 'zh') return zhCN;
+    return enUS;
+  }, [i18n.language]);
+
   if (checking) return null;
 
   const toggleTheme = () => setIsDark((prev) => !prev);
 
   return (
-    <ConfigProvider theme={{ algorithm }}>
+    <ConfigProvider theme={{ algorithm }} locale={antdLocale}>
       <ThemeProvider isDark={isDark} toggle={toggleTheme}>
         <Routes>
           <Route path="/setup" element={<Setup />} />
@@ -60,6 +72,7 @@ const App: React.FC = () => {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="targets" element={<Targets />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="logs" element={<Logs />} />
                   <Route path="about" element={<About />} />
                   <Route path="" element={<Navigate to="/dashboard" replace />} />
                 </Routes>

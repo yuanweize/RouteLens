@@ -1,0 +1,142 @@
+{
+  "common": {
+    "appName": "RouteLens",
+    "version": "v1.1.0",
+    "logout": "Logout",
+    "profile": "Profile",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "actions": "Actions",
+    "status": "Status",
+    "na": "N/A"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "targets": "Targets",
+    "settings": "Settings",
+    "about": "About",
+    "logs": "System Logs"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "console": "RouteLens Console",
+    "avgLatency": "Avg Latency",
+    "packetLoss": "Packet Loss",
+    "downlink": "Downlink",
+    "uplink": "Uplink",
+    "routeMap": "Route Map",
+    "mtrHopDetails": "MTR Hop Details",
+    "truncated": "Truncated",
+    "historicalMetrics": "Historical Metrics",
+    "selectTarget": "Select Target",
+    "probeNow": "Probe Now"
+  },
+  "hopTable": {
+    "hop": "#",
+    "ipHost": "IP / Host",
+    "location": "Location",
+    "loss": "Loss",
+    "latency": "Latency",
+    "asn": "ASN",
+    "countryOnly": "Country Only"
+  },
+  "targets": {
+    "title": "Targets",
+    "newTarget": "New Target",
+    "editTarget": "Edit Target",
+    "name": "Name",
+    "hostIp": "Host/IP",
+    "probeType": "Probe Type",
+    "description": "Description",
+    "probeTypes": {
+      "icmp": "ICMP (Ping/MTR)",
+      "http": "HTTP Download",
+      "ssh": "SSH Speed Test",
+      "iperf": "iPerf3"
+    },
+    "sshUser": "SSH User",
+    "sshPort": "SSH Port",
+    "sshKeyPath": "SSH Key Path",
+    "sshKeyText": "SSH Key Text",
+    "uploadKey": "Upload SSH Key",
+    "httpUrl": "HTTP URL",
+    "iperfPort": "iPerf Port",
+    "confirmDelete": "Are you sure you want to delete this target?"
+  },
+  "settings": {
+    "title": "Settings",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "passwordUpdated": "Password updated successfully",
+    "theme": "Theme",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "language": "Language"
+  },
+  "logs": {
+    "title": "System Logs",
+    "levelFilter": "Level Filter",
+    "allLevels": "All Levels",
+    "refresh": "Refresh",
+    "clear": "Clear",
+    "noLogs": "No logs available",
+    "lines": "Lines"
+  },
+  "login": {
+    "title": "Login",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Login",
+    "invalidCredentials": "Invalid username or password"
+  },
+  "setup": {
+    "title": "Initial Setup",
+    "subtitle": "Create your admin account",
+    "username": "Admin Username",
+    "password": "Admin Password",
+    "submit": "Complete Setup"
+  },
+  "about": {
+    "title": "About",
+    "description": "RouteLens is a self-hosted network route monitoring and visualization tool.",
+    "features": "Features",
+    "featureList": [
+      "Real-time traceroute with MTR integration",
+      "Geographic IP visualization on world map",
+      "Multi-protocol speed testing (SSH/HTTP/iPerf)",
+      "Historical metrics and trend analysis"
+    ],
+    "github": "GitHub Repository",
+    "license": "MIT License"
+  },
+  "errors": {
+    "networkError": "Network error, please try again",
+    "unauthorized": "Session expired, please login again",
+    "serverError": "Server error",
+    "probeError": "Probe Error",
+    "idle": "Idle",
+    "sshAuthFailed": "SSH: Authentication failed",
+    "sshConnectionRefused": "SSH: Connection refused",
+    "sshTimeout": "SSH: Connection timeout"
+  },
+  "speedStatus": {
+    "ok": "OK",
+    "error": "Error",
+    "idle": "Idle",
+    "testing": "Testing..."
+  }
+}

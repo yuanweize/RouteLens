@@ -8,6 +8,15 @@ export interface Target {
   enabled: boolean;
   probe_type: string;
   probe_config: string;
+  last_error?: string;
+  last_error_at?: string;
+}
+
+export interface LogEntry {
+  timestamp: string;
+  level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+  message: string;
+  source?: string;
 }
 
 export const login = (username: string, password: string) => {
@@ -31,3 +40,6 @@ export const getHistory = (params: { target: string; start?: string; end?: strin
 export const getLatestTrace = (target: string) => request.get('/api/v1/trace', { params: { target } });
 
 export const triggerProbe = (payload?: { target?: string }) => request.post('/api/v1/probe', payload || {});
+
+export const getLogs = (params?: { lines?: number; level?: string }) =>
+  request.get<{ logs: LogEntry[]; count: number }>('/api/v1/logs', { params });
