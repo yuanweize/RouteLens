@@ -41,7 +41,7 @@ func NewDB(dbPath string) (*DB, error) {
 	}
 
 	// Auto Migrate
-	if err := db.AutoMigrate(&MonitorRecord{}); err != nil {
+	if err := db.AutoMigrate(&MonitorRecord{}, &Target{}); err != nil {
 		return nil, fmt.Errorf("migration failed: %w", err)
 	}
 

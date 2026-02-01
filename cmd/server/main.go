@@ -32,6 +32,9 @@ func main() {
 		log.Fatalf("Failed to init DB: %v", err)
 	}
 
+	// Seed default targets if none exist
+	seedTargets(db)
+
 	// 3. Monitor Service
 	mon := monitor.NewService(db)
 	mon.Start()
@@ -43,5 +46,14 @@ func main() {
 	log.Printf("Starting API Server on %s...", port)
 	if err := server.Run(port); err != nil {
 		log.Fatalf("Server failed: %v", err)
+	}
+}
+
+func seedTargets(db *storage.DB) {
+	existing, _ := db.GetTargets(false)
+	if len(existing) == 0 {
+		log.Println("Seeding default targets...")
+		db.SaveTarget(&storage.Target{Name: "Target A (China)", Address: "nas.yuanweize.win", Desc: "NAS node in China"})
+		db.SaveTarget(&storage.Target{Name: "Target B (Europe)", Address: "nue.eurun.top", Desc: "NUE node in Europe"})
 	}
 }

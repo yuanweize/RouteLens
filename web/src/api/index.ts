@@ -15,3 +15,23 @@ export const getHistory = (params: { target?: string; start?: string; end?: stri
 export const triggerProbe = () => {
     return request.post('/api/v1/probe');
 };
+
+export interface Target {
+    ID?: number;
+    Name: string;
+    Address: string;
+    Desc: string;
+    Enabled: boolean;
+}
+
+export const getTargets = () => {
+    return request.get<Target[]>('/api/v1/targets');
+};
+
+export const saveTarget = (target: Target) => {
+    return request.post<Target>('/api/v1/targets', target);
+};
+
+export const deleteTarget = (id: number) => {
+    return request.delete(`/api/v1/targets/${id}`);
+};

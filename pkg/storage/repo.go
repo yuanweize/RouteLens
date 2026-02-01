@@ -29,3 +29,23 @@ func (d *DB) GetRecordDetail(id uint) (*MonitorRecord, error) {
 	err := d.conn.First(&r, id).Error
 	return &r, err
 }
+
+// --- Target Management ---
+
+func (d *DB) SaveTarget(t *Target) error {
+	return d.conn.Save(t).Error
+}
+
+func (d *DB) DeleteTarget(id uint) error {
+	return d.conn.Delete(&Target{}, id).Error
+}
+
+func (d *DB) GetTargets(onlyEnabled bool) ([]Target, error) {
+	var targets []Target
+	query := d.conn.Model(&Target{})
+	if onlyEnabled {
+		query = query.Where("enabled = ?", true)
+	}
+	err := query.Find(&targets).Error
+	return targets, err
+}

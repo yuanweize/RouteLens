@@ -12,11 +12,12 @@ import (
 )
 
 type Service struct {
-	db          *storage.DB
-	targets     []string
-	pingTicker  *time.Ticker
-	speedTicker *time.Ticker
-	stopChan    chan struct{}
+	db            *storage.DB
+	targets       []string
+	pingTicker    *time.Ticker
+	speedTicker   *time.Ticker
+	refreshTicker *time.Ticker
+	stopChan      chan struct{}
 
 	// Config
 	sshHost string
@@ -26,35 +27,40 @@ type Service struct {
 }
 
 func NewService(db *storage.DB) *Service {
-	// Parse targets from Env
-	targetsEnv := os.Getenv("RS_TARGETS")
-	targets := []string{}
-	if targetsEnv != "" {
-		targets = strings.Split(targetsEnv, ",")
-	}
-
 	// SSH Config
 	sshPort := 22
 	if p, err := strconv.Atoi(os.Getenv("RS_SSH_PORT")); err == nil {
 		sshPort = p
 	}
 
-	return &Service{
+	s := &Service{
 		db:       db,
-		targets:  targets,
 		stopChan: make(chan struct{}),
 		sshPort:  sshPort,
 		sshUser:  os.Getenv("RS_SSH_USER"),
 		sshKey:   os.Getenv("RS_SSH_KEY_PATH"),
 	}
+	s.refreshTargets() // Initial load
+	return s
+}
+
+func (s *Service) refreshTargets() {
+	targets, err := s.db.GetTargets(true)
+	if err != nil {
+		log.Printf("Failed to refresh targets: %v", err)
+		return
+	}
+	var addrs []string
+	for _, t := range targets {
+		addrs = append(addrs, t.Address)
+	}
+	s.targets = addrs
 }
 
 func (s *Service) Start() {
-	// Ping/Trace Frequency (e.g., every 30s)
 	s.pingTicker = time.NewTicker(30 * time.Second)
-
-	// Speed Frequency (e.g., every 1 hour)
 	s.speedTicker = time.NewTicker(1 * time.Hour)
+	s.refreshTicker = time.NewTicker(1 * time.Minute)
 
 	go s.runLoop()
 }
@@ -67,6 +73,9 @@ func (s *Service) Stop() {
 	if s.speedTicker != nil {
 		s.speedTicker.Stop()
 	}
+	if s.refreshTicker != nil {
+		s.refreshTicker.Stop()
+	}
 }
 
 func (s *Service) runLoop() {
@@ -77,6 +86,8 @@ func (s *Service) runLoop() {
 			s.runPingTraceCycle()
 		case <-s.speedTicker.C:
 			s.runSpeedCycle()
+		case <-s.refreshTicker.C:
+			s.refreshTargets()
 		case <-s.stopChan:
 			log.Println("Monitor Service Stopped")
 			return

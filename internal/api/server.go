@@ -3,6 +3,7 @@ package api
 import (
 	"io/fs"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -89,6 +90,11 @@ func (s *Server) setupRoutes() {
 		api.GET("/status", s.handleStatus)
 		api.GET("/history", s.handleHistory)
 		api.POST("/probe", s.handleProbe)
+
+		// Target CRUD
+		api.GET("/targets", s.handleGetTargets)
+		api.POST("/targets", s.handleSaveTarget)
+		api.DELETE("/targets/:id", s.handleDeleteTarget)
 	}
 }
 
@@ -138,4 +144,40 @@ func (s *Server) handleHistory(c *gin.Context) {
 
 func (s *Server) handleProbe(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"message": "Probe triggered"})
+}
+
+func (s *Server) handleGetTargets(c *gin.Context) {
+	targets, err := s.db.GetTargets(false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, targets)
+}
+
+func (s *Server) handleSaveTarget(c *gin.Context) {
+	var t storage.Target
+	if err := c.ShouldBindJSON(&t); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := s.db.SaveTarget(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, t)
+}
+
+func (s *Server) handleDeleteTarget(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+	if err := s.db.DeleteTarget(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Target deleted"})
 }

@@ -7,65 +7,88 @@ const MapChart: React.FC = () => {
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        // Fetch World Map GeoJSON
         const fetchMap = async () => {
             try {
                 const res = await axios.get('https://raw.githubusercontent.com/apache/echarts/master/test/data/map/json/world.json');
                 echarts.registerMap('world', res.data);
                 setIsLoaded(true);
-            } catch (err) {
-                console.error("Failed to load map data", err);
-            }
+            } catch (err) { console.error(err); }
         };
         fetchMap();
     }, []);
 
+    // Simulated path data for demonstration
+    // In production, this comes from backend Traceroute JSON
+    const linesData = [
+        {
+            coords: [[116.46, 39.92], [2.35, 48.85]], // Beijing -> Paris
+            lineStyle: { color: '#165dff' }
+        },
+        {
+            coords: [[2.35, 48.85], [-74.00, 40.71]], // Paris -> New York
+            lineStyle: { color: '#00b42a' }
+        },
+        {
+            coords: [[-74.00, 40.71], [116.46, 39.92]], // New York -> Beijing
+            lineStyle: { color: '#ff7d00' }
+        }
+    ];
+
     const option = {
         backgroundColor: 'transparent',
+        tooltip: { trigger: 'item' },
         geo: {
             map: 'world',
             roam: true,
-            label: {
-                emphasis: {
-                    show: false
-                }
-            },
+            silent: true,
             itemStyle: {
-                normal: {
-                    areaColor: '#323c48',
-                    borderColor: '#111'
-                },
-                emphasis: {
-                    areaColor: '#2a333d'
-                }
+                areaColor: 'var(--color-fill-3)',
+                borderColor: 'var(--color-border-3)'
             }
         },
         series: [
-            // TOD0: Add Lines for Traceroute paths
             {
                 type: 'lines',
                 coordinateSystem: 'geo',
+                zlevel: 1,
                 effect: {
                     show: true,
-                    period: 6,
+                    period: 4,
                     trailLength: 0.7,
                     color: '#fff',
                     symbolSize: 3
                 },
                 lineStyle: {
-                    normal: {
-                        color: '#a6c84c',
-                        width: 0,
-                        curveness: 0.2
-                    }
+                    width: 0,
+                    curveness: 0.2
                 },
-                data: [] // To be populated from props
+                data: linesData
+            },
+            {
+                type: 'lines',
+                coordinateSystem: 'geo',
+                zlevel: 2,
+                symbol: ['none', 'arrow'],
+                symbolSize: 10,
+                effect: {
+                    show: true,
+                    period: 4,
+                    trailLength: 0,
+                    symbol: 'circle',
+                    symbolSize: 1
+                },
+                lineStyle: {
+                    width: 1,
+                    opacity: 0.6,
+                    curveness: 0.2
+                },
+                data: linesData
             }
         ]
     };
 
     return (
-        <div style={{ height: '400px', width: '100%' }}>
+        <div style={{ height: '450px', width: '100%' }}>
             {isLoaded ? <ReactECharts option={option} style={{ height: '100%', width: '100%' }} /> : 'Loading Map...'}
         </div>
     );
