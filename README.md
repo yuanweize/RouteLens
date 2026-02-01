@@ -24,7 +24,7 @@ graph TD
     User[User / Administrator] -->|Web UI| FE[React Frontend]
     FE -->|API| BE[Go API Server]
     
-    subgraph Core "Probe Engine"
+    subgraph Core ["Probe Engine"]
         ICMP[ICMP Pinger]
         MTR[Traceroute Engine]
         SSH[SSH Speed Tester]
