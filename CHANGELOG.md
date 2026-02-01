@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0](https://github.com/yuanweize/RouteLens/compare/v1.2.0...v1.3.0) (2026-02-01)
+
+
+### Features
+
+* **self-update:** AdGuard Home 风格的应用内一键更新 ([c3d2f4c](https://github.com/yuanweize/RouteLens/commit/c3d2f4c79ae70232a3530f2d109c1f381b49070c))
+
+
+### Bug Fixes
+
+* **critical:** 修复 SSH 测速调度逻辑 - 死代码复活 ([f6df1ec](https://github.com/yuanweize/RouteLens/commit/f6df1eca6d7abfa1fcc02d571aa3ceae21adf683))
+* make system/info public API, ensure proper deployment ([7db9dbf](https://github.com/yuanweize/RouteLens/commit/7db9dbf1cd30fddc2fdd8ba57dd2239e02f7ef4f))
+* **security:** add cache headers for frontend assets ([de211d8](https://github.com/yuanweize/RouteLens/commit/de211d8c13a14efe14e3caeaad36721ee8f8c17c))
+* **security:** update vulnerable dependencies ([96a5c76](https://github.com/yuanweize/RouteLens/commit/96a5c76e7cf21eaf50e6b7832e9471db08b28afd))
+
 ## [1.2.0](https://github.com/yuanweize/RouteLens/compare/v1.1.0...v1.2.0) (2026-02-01)
 
 
