@@ -15,7 +15,6 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-# gcc/musl-dev needed for CGO (SQLite)
 RUN apk add --no-cache gcc musl-dev
 
 COPY go.mod go.sum ./
@@ -26,8 +25,8 @@ COPY . .
 # Copy built frontend assets
 COPY --from=web-builder /web/dist ./web/dist
 
-# Build with CGO enabled for SQLite
-RUN CGO_ENABLED=1 go build -ldflags="-s -w" -o routelens ./cmd/server
+# Build with CGO disabled (pure Go sqlite)
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o routelens ./cmd/server
 
 # Final Stage
 FROM alpine:latest
