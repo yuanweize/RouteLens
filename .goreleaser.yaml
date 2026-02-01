@@ -6,10 +6,7 @@ project_name: routelens
 
 before:
   hooks:
-    # Ensure go.mod is tidy
     - go mod tidy
-    # Frontend must be built before this runs (handled in CI)
-    # Verify web/dist exists
     - sh -c "test -d web/dist || (echo 'ERROR: web/dist not found! Build frontend first.' && exit 1)"
 
 builds:
