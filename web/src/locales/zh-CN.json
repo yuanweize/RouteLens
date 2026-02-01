@@ -85,7 +85,28 @@
     "theme": "主题",
     "lightMode": "浅色模式",
     "darkMode": "深色模式",
-    "language": "语言"
+    "language": "语言",
+    "tabs": {
+      "security": "安全设置",
+      "about": "关于与更新"
+    },
+    "systemInfo": "系统信息",
+    "softwareUpdate": "软件更新",
+    "current": "当前版本",
+    "latest": "最新版本",
+    "status": "状态",
+    "updateAvailable": "有可用更新",
+    "upToDate": "已是最新版本",
+    "checkForUpdates": "检查更新",
+    "installUpdate": "安装更新",
+    "releaseNotes": "更新日志",
+    "updating": "正在更新 RouteLens",
+    "updateComplete": "更新完成！正在重启服务...",
+    "downloading": "正在下载并安装更新...",
+    "newVersionAvailable": "新版本 {{version}} 可用！",
+    "onLatestVersion": "已是最新版本。",
+    "updateFailed": "更新失败",
+    "updateSuccessRestart": "更新成功！正在重启服务..."
   },
   "logs": {
     "title": "系统日志",
@@ -140,9 +161,7 @@
       "深色模式与多语言支持",
       "自托管部署，无外部依赖"
     ],
-    "license": "MIT 开源协议",
-    "madeWith": "用",
-    "byAuthor": "制作 by yuanweize"
+    "license": "MIT 开源协议"
   },
   "errors": {
     "networkError": "网络错误，请重试",

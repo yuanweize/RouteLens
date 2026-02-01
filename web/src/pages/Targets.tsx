@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Upload, message } from 'antd';
+import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Upload, message } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
+import { useTranslation } from 'react-i18next';
 import type { Target } from '../api';
 import { deleteTarget, getTargets, saveTarget } from '../api';
 
@@ -13,27 +14,55 @@ const probeOptions = [
 ];
 
 const Targets: React.FC = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Target | null>(null);
 
   const { data = [], refresh, loading } = useRequest(getTargets);
 
+  // Toggle target enabled/disabled status
+  const handleToggleEnabled = async (record: Target, checked: boolean) => {
+    const payload: Target = {
+      ...record,
+      enabled: checked,
+    };
+    try {
+      await saveTarget(payload);
+      refresh();
+      message.success(checked ? t('common.enabled') : t('common.disabled'));
+    } catch (e) {
+      message.error(t('common.error'));
+    }
+  };
+
   const columns = useMemo(() => [
-    { title: 'Name', dataIndex: 'name' },
-    { title: 'Host/IP', dataIndex: 'address' },
-    { title: 'Probe', dataIndex: 'probe_type', render: (val: string) => <Tag color="blue">{val}</Tag> },
-    { title: 'Enabled', dataIndex: 'enabled', render: (val: boolean) => (val ? <Tag color="green">Enabled</Tag> : <Tag color="red">Disabled</Tag>) },
+    { title: t('targets.name'), dataIndex: 'name' },
+    { title: t('targets.hostIp'), dataIndex: 'address' },
+    { title: t('targets.probeType'), dataIndex: 'probe_type', render: (val: string) => <Tag color="blue">{val}</Tag> },
+    { 
+      title: t('common.status'), 
+      dataIndex: 'enabled', 
+      render: (val: boolean, record: Target) => (
+        <Switch 
+          checked={val} 
+          onChange={(checked) => handleToggleEnabled(record, checked)}
+          checkedChildren={t('common.enabled')}
+          unCheckedChildren={t('common.disabled')}
+        />
+      )
+    },
     {
-      title: 'Actions',
+      title: t('common.actions'),
       render: (_: any, record: Target) => (
         <Space>
-          <Button type="link" onClick={() => onEdit(record)}>Edit</Button>
-          <Button type="link" danger onClick={() => onDelete(record.id)}>Delete</Button>
+          <Button type="link" onClick={() => onEdit(record)}>{t('common.edit')}</Button>
+          <Button type="link" danger onClick={() => onDelete(record.id)}>{t('common.delete')}</Button>
         </Space>
       ),
     },
-  ], []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t]);
 
   const onEdit = (record: Target) => {
     setEditing(record);
@@ -106,24 +135,24 @@ const Targets: React.FC = () => {
   };
 
   return (
-    <Card className="page-card" title="Targets" extra={<Button icon={<PlusOutlined />} onClick={onCreate}>New Target</Button>}>
+    <Card className="page-card" title={t('targets.title')} extra={<Button icon={<PlusOutlined />} onClick={onCreate}>{t('targets.newTarget')}</Button>}>
       <Table rowKey="id" loading={loading} dataSource={data} columns={columns} />
 
       <Modal
-        title={editing ? 'Edit Target' : 'New Target'}
+        title={editing ? t('targets.editTarget') : t('targets.newTarget')}
         open={open}
         onOk={onSubmit}
         onCancel={() => setOpen(false)}
         destroyOnClose
       >
         <Form layout="vertical" form={form} preserve={false}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('targets.name')} rules={[{ required: true }]}>
             <Input placeholder="Hong Kong VPS" />
           </Form.Item>
-          <Form.Item name="address" label="Host/IP" rules={[{ required: true }]}>
+          <Form.Item name="address" label={t('targets.hostIp')} rules={[{ required: true }]}>
             <Input placeholder="1.2.3.4" />
           </Form.Item>
-          <Form.Item name="probe_type" label="Probe Type" rules={[{ required: true }]}>
+          <Form.Item name="probe_type" label={t('targets.probeType')} rules={[{ required: true }]}>
             <Select options={probeOptions} />
           </Form.Item>
           <Form.Item shouldUpdate={(prev, cur) => prev.probe_type !== cur.probe_type}>
@@ -131,7 +160,7 @@ const Targets: React.FC = () => {
               const mode = getFieldValue('probe_type');
               if (mode === 'MODE_HTTP') {
                 return (
-                  <Form.Item name="http_url" label="HTTP URL" rules={[{ required: true }]}>
+                  <Form.Item name="http_url" label={t('targets.httpUrl')} rules={[{ required: true }]}>
                     <Input placeholder="https://example.com/test.zip" />
                   </Form.Item>
                 );
@@ -139,27 +168,27 @@ const Targets: React.FC = () => {
               if (mode === 'MODE_SSH') {
                 return (
                   <>
-                    <Form.Item name="ssh_user" label="SSH User" rules={[{ required: true }]}>
+                    <Form.Item name="ssh_user" label={t('targets.sshUser')} rules={[{ required: true }]}>
                       <Input placeholder="root" />
                     </Form.Item>
-                    <Form.Item name="ssh_port" label="SSH Port">
+                    <Form.Item name="ssh_port" label={t('targets.sshPort')}>
                       <Input placeholder="22" />
                     </Form.Item>
-                    <Form.Item name="ssh_key_path" label="SSH Key Path">
+                    <Form.Item name="ssh_key_path" label={t('targets.sshKeyPath')}>
                       <Input placeholder="/root/.ssh/id_rsa" />
                     </Form.Item>
-                    <Form.Item name="ssh_key_text" label="SSH Key Text">
+                    <Form.Item name="ssh_key_text" label={t('targets.sshKeyText')}>
                       <Input.TextArea rows={4} placeholder="Paste private key content" />
                     </Form.Item>
                     <Upload beforeUpload={handleUpload} showUploadList={false}>
-                      <Button icon={<UploadOutlined />}>Upload SSH Key</Button>
+                      <Button icon={<UploadOutlined />}>{t('targets.uploadKey')}</Button>
                     </Upload>
                   </>
                 );
               }
               if (mode === 'MODE_IPERF') {
                 return (
-                  <Form.Item name="iperf_port" label="Iperf Port" rules={[{ required: true }]}>
+                  <Form.Item name="iperf_port" label={t('targets.iperfPort')} rules={[{ required: true }]}>
                     <Input placeholder="5201" />
                   </Form.Item>
                 );
@@ -167,7 +196,7 @@ const Targets: React.FC = () => {
               return null;
             }}
           </Form.Item>
-          <Form.Item name="desc" label="Description">
+          <Form.Item name="desc" label={t('targets.description')}>
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>

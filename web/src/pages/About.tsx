@@ -8,7 +8,6 @@ import {
   DashboardOutlined,
   AimOutlined,
   FileTextOutlined,
-  HeartFilled,
   CloudDownloadOutlined,
   AppleOutlined,
   WindowsOutlined,
@@ -341,13 +340,8 @@ const About: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Footer */}
+      {/* Footer - minimal spacing */}
       <Divider style={{ margin: '32px 0 24px' }} />
-      <div style={{ textAlign: 'center', paddingBottom: 24 }}>
-        <Text type="secondary">
-          {t('about.madeWith')} <HeartFilled style={{ color: '#ff4d4f' }} /> {t('about.byAuthor')}
-        </Text>
-      </div>
     </div>
   );
 };

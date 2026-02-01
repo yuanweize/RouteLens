@@ -85,7 +85,28 @@
     "theme": "Theme",
     "lightMode": "Light Mode",
     "darkMode": "Dark Mode",
-    "language": "Language"
+    "language": "Language",
+    "tabs": {
+      "security": "Security",
+      "about": "About & Updates"
+    },
+    "systemInfo": "System Information",
+    "softwareUpdate": "Software Update",
+    "current": "Current",
+    "latest": "Latest",
+    "status": "Status",
+    "updateAvailable": "Update Available",
+    "upToDate": "Up to Date",
+    "checkForUpdates": "Check for Updates",
+    "installUpdate": "Install Update",
+    "releaseNotes": "Release Notes",
+    "updating": "Updating RouteLens",
+    "updateComplete": "Update complete! Restarting service...",
+    "downloading": "Downloading and installing update...",
+    "newVersionAvailable": "New version {{version}} available!",
+    "onLatestVersion": "You are on the latest version.",
+    "updateFailed": "Update failed",
+    "updateSuccessRestart": "Update successful! Restarting service..."
   },
   "logs": {
     "title": "System Logs",
@@ -140,9 +161,7 @@
       "Dark mode and multi-language support",
       "Self-hosted, no external dependencies"
     ],
-    "license": "MIT License",
-    "madeWith": "Made with",
-    "byAuthor": "by yuanweize"
+    "license": "MIT License"
   },
   "errors": {
     "networkError": "Network error, please try again",

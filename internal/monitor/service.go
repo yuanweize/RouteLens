@@ -98,15 +98,23 @@ func (s *Service) runPingTraceCycle() {
 	// Ping/Trace is common for almost all modes except maybe pure HTTP?
 	// User said "Mode A: ICMP/MTR Only (默认)": 仅监控延迟和丢包。
 	// So we keep ICMP/Trace as a baseline.
-	logging.Info("monitor", "Starting ping/trace cycle for %d targets", len(s.targets))
+	enabledTargets := 0
 	for _, target := range s.targets {
+		if !target.Enabled {
+			continue // Skip disabled targets
+		}
+		enabledTargets++
 		go s.runPingTraceForTarget(target)
 	}
+	logging.Info("monitor", "Starting ping/trace cycle for %d targets (total: %d)", enabledTargets, len(s.targets))
 }
 
 func (s *Service) runSpeedCycle() {
 	speedTargets := []storage.Target{}
 	for _, target := range s.targets {
+		if !target.Enabled {
+			continue // Skip disabled targets
+		}
 		if target.ProbeType == storage.ProbeModeICMP || target.ProbeType == "" {
 			continue // No speed test for ICMP only mode
 		}

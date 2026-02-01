@@ -92,13 +92,13 @@ func (s *Server) handleCheckUpdate(c *gin.Context) {
 	// If no binary found, try to at least get the latest release version from GitHub API directly
 	if !found || latest == nil {
 		logging.Info("update", "No matching binary found, fetching latest release tag from GitHub API")
-		
+
 		// Direct GitHub API call to get latest release
 		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubSlug)
 		client := &http.Client{Timeout: 10 * time.Second}
 		req, _ := http.NewRequest("GET", apiURL, nil)
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
-		
+
 		resp, apiErr := client.Do(req)
 		if apiErr == nil && resp.StatusCode == 200 {
 			defer resp.Body.Close()
@@ -115,7 +115,7 @@ func (s *Server) handleCheckUpdate(c *gin.Context) {
 				if !release.PublishedAt.IsZero() {
 					response.PublishedAt = release.PublishedAt.Format(time.RFC3339)
 				}
-				
+
 				// Compare versions
 				if Version != "dev" {
 					latestVer := strings.TrimPrefix(release.TagName, "v")
