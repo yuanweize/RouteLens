@@ -1,0 +1,30 @@
+[Unit]
+Description=RouteLens Network Observer Daemon
+Documentation=https://github.com/yuanweize/RouteLens
+After=network.target
+
+[Service]
+Type=simple
+User=routelens
+Group=routelens
+# Environment variables file
+EnvironmentFile=/etc/routelens/env
+
+# Binary Path (Default install location)
+ExecStart=/usr/local/bin/routelens
+
+# Restart policy
+Restart=always
+RestartSec=5s
+
+# Capabilities: critical for Raw Socket (Ping/MTR) without root
+# CAP_NET_RAW: Allow raw sockets (ICMP)
+# CAP_NET_BIND_SERVICE: Allow binding to privileged ports (if needed)
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE
+
+# Hardening
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

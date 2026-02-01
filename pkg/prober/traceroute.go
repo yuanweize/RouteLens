@@ -61,7 +61,7 @@ func (t *TracerouteRunner) Run() (*TraceResult, error) {
 			Type: ipv4.ICMPTypeEcho, Code: 0,
 			Body: &icmp.Echo{
 				ID: id, Seq: ttl,
-				Data: []byte("RouteScope-Trace"),
+				Data: []byte("RouteLens-Trace"),
 			},
 		}
 		wb, err := wm.Marshal(nil)

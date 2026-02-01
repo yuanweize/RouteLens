@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/yuanweize/RouteScope/pkg/prober"
-	"github.com/yuanweize/RouteScope/pkg/storage"
+	"github.com/yuanweize/RouteLens/pkg/prober"
+	"github.com/yuanweize/RouteLens/pkg/storage"
 )
 
 func main() {

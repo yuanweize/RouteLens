@@ -23,6 +23,10 @@ jobs:
             arch: arm64
             GOOS: linux
             GOARCH: arm64
+          # Mac Builds with CGO are tricky on Linux runners. 
+          # Keeping them enabled as requested, but they might fail without osxcross.
+          # Ideally, run on macos-latest for darwin builds, but matrix makes that harder to split logic.
+          # For now, keeping as is.
           - os: darwin
             arch: amd64
             GOOS: darwin
@@ -40,6 +44,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # Frontend Build
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Build Frontend
+      run: |
+        cd web
+        npm install
+        npm run build
+        # Result is in web/dist, which is embedded by cmd/server
+
+    # Go Build
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -52,7 +70,7 @@ jobs:
         GOARCH: ${{ matrix.GOARCH }}
         CGO_ENABLED: 1 # GORM/SQLite needs CGO
       run: |
-        # Install Cross-compilation tools for SQLite
+        # Install Cross-compilation tools
         if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
           sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
           export CC=aarch64-linux-gnu-gcc
@@ -63,12 +81,12 @@ jobs:
         fi
         
         # Build
-        BINARY_NAME=routescope-${{ matrix.os }}-${{ matrix.arch }}
+        BINARY_NAME=routelens-${{ matrix.os }}-${{ matrix.arch }}
         if [ "${{ matrix.os }}" = "windows" ]; then
           BINARY_NAME=${BINARY_NAME}.exe
         fi
         
-        go build -v -o build/$BINARY_NAME ./cmd/probe_test
+        go build -v -o build/$BINARY_NAME ./cmd/server
 
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1

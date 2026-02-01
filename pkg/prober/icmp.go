@@ -74,7 +74,7 @@ func (p *ICMPPinger) sendPing(c *icmp.PacketConn, dst *net.IPAddr, seq int) (tim
 		Type: ipv4.ICMPTypeEcho, Code: 0,
 		Body: &icmp.Echo{
 			ID: os.Getpid() & 0xffff, Seq: seq,
-			Data: []byte("RouteScope-Ping"),
+			Data: []byte("RouteLens-Ping"),
 		},
 	}
 	wb, err := wm.Marshal(nil)
