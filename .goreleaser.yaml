@@ -7,7 +7,7 @@ project_name: routelens
 before:
   hooks:
     - go mod tidy
-    - sh -c "test -d web/dist || (echo 'ERROR: web/dist not found! Build frontend first.' && exit 1)"
+    - test -d web/dist
 
 builds:
   - id: routelens
