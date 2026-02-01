@@ -1,7 +1,6 @@
 {
   "common": {
     "appName": "RouteLens",
-    "version": "v1.1.0",
     "logout": "退出登录",
     "profile": "个人资料",
     "loading": "加载中...",
@@ -81,6 +80,7 @@
     "changePassword": "修改密码",
     "newPassword": "新密码",
     "confirmPassword": "确认密码",
+    "passwordMismatch": "两次输入的密码不一致",
     "passwordUpdated": "密码修改成功",
     "theme": "主题",
     "lightMode": "浅色模式",

@@ -1,7 +1,6 @@
 {
   "common": {
     "appName": "RouteLens",
-    "version": "v1.1.0",
     "logout": "Logout",
     "profile": "Profile",
     "loading": "Loading...",
@@ -81,6 +80,7 @@
     "changePassword": "Change Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm Password",
+    "passwordMismatch": "Passwords do not match",
     "passwordUpdated": "Password updated successfully",
     "theme": "Theme",
     "lightMode": "Light Mode",
