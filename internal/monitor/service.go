@@ -448,33 +448,38 @@ func resolveIP(host string) string {
 	return host
 }
 
-func initGeoProvider() *geoip.Provider {
-	cityDB := os.Getenv("RS_GEOIP_CITY_DB")
-	ispDB := os.Getenv("RS_GEOIP_ISP_DB")
+// resolveGeoIPPaths determines cityDB and ispDB paths from environment variables
+func resolveGeoIPPaths() (cityDB, ispDB string) {
+	cityDB = os.Getenv("RS_GEOIP_CITY_DB")
+	ispDB = os.Getenv("RS_GEOIP_ISP_DB")
 	geoPath := os.Getenv("RS_GEOIP_PATH")
+
 	if geoPath == "" && cityDB == "" && ispDB == "" {
 		geoPath = filepath.Join("data", "geoip")
 	}
-	if geoPath != "" {
-		if strings.HasSuffix(strings.ToLower(geoPath), ".mmdb") {
-			if cityDB == "" {
-				cityDB = geoPath
-			}
-		} else {
-			if cityDB == "" {
-				cityDB = filepath.Join(geoPath, "GeoLite2-City.mmdb")
-			}
-			if ispDB == "" {
-				ispDB = filepath.Join(geoPath, "GeoLite2-ISP.mmdb")
-			}
-		}
-	}
-	if cityDB == "" && ispDB == "" {
-		log.Println("GeoIP disabled: RS_GEOIP_PATH/RS_GEOIP_CITY_DB not set. Map lines may be empty.")
-		log.Println("GeoIP tip: place GeoLite2-City.mmdb under /opt/routelens/geoip and set RS_GEOIP_PATH=/opt/routelens/geoip")
-		return nil
+
+	if geoPath == "" {
+		return cityDB, ispDB
 	}
 
+	// Check if geoPath is a direct .mmdb file or a directory
+	if strings.HasSuffix(strings.ToLower(geoPath), ".mmdb") {
+		if cityDB == "" {
+			cityDB = geoPath
+		}
+	} else {
+		if cityDB == "" {
+			cityDB = filepath.Join(geoPath, "GeoLite2-City.mmdb")
+		}
+		if ispDB == "" {
+			ispDB = filepath.Join(geoPath, "GeoLite2-ISP.mmdb")
+		}
+	}
+	return cityDB, ispDB
+}
+
+// ensureGeoIPFiles ensures the GeoIP database files exist, downloading if necessary
+func ensureGeoIPFiles(cityDB, ispDB string) {
 	if cityDB != "" {
 		if dlErr := ensureGeoIPDatabase(cityDB); dlErr != nil {
 			log.Printf("GeoIP download failed: %v", dlErr)
@@ -485,6 +490,18 @@ func initGeoProvider() *geoip.Provider {
 			log.Printf("GeoIP ISP DB not found at %s: %v", ispDB, err)
 		}
 	}
+}
+
+func initGeoProvider() *geoip.Provider {
+	cityDB, ispDB := resolveGeoIPPaths()
+
+	if cityDB == "" && ispDB == "" {
+		log.Println("GeoIP disabled: RS_GEOIP_PATH/RS_GEOIP_CITY_DB not set. Map lines may be empty.")
+		log.Println("GeoIP tip: place GeoLite2-City.mmdb under /opt/routelens/geoip and set RS_GEOIP_PATH=/opt/routelens/geoip")
+		return nil
+	}
+
+	ensureGeoIPFiles(cityDB, ispDB)
 
 	provider, err := geoip.NewProvider(cityDB, ispDB)
 	if err != nil {
