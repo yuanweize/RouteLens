@@ -52,6 +52,24 @@ const Dashboard: React.FC = () => {
     return trace;
   }, [trace]);
 
+  const renderLatencyTag = (value: any, color?: string) => {
+    if (typeof value === 'number' && value > 0) {
+      return <Tag color={color}>{`${value}ms`}</Tag>;
+    }
+    return (
+      <Tag>
+        <Typography.Text type="secondary">N/A</Typography.Text>
+      </Tag>
+    );
+  };
+
+  const renderLoss = (value: any) => {
+    if (typeof value === 'number') {
+      return value;
+    }
+    return <Typography.Text type="secondary">N/A</Typography.Text>;
+  };
+
   const hopRows = (traceData?.hops || []).map((hop: any) => ({
     key: hop.hop,
     hop: hop.hop,
@@ -111,14 +129,21 @@ const Dashboard: React.FC = () => {
           </Card>
           <Card className="chart-card" style={{ marginTop: 16 }}>
             <Collapse
+              defaultActiveKey={['hops']}
               items={[
                 {
                   key: 'hops',
-                  label: 'MTR Hop Details',
+                  label: (
+                    <Space>
+                      <span>MTR Hop Details</span>
+                      {traceData?.truncated ? <Tag color="orange">Truncated</Tag> : null}
+                    </Space>
+                  ),
                   children: (
                     <Table
                       size="small"
                       dataSource={hopRows}
+                      defaultExpandAllRows
                       pagination={false}
                       columns={[
                         { title: 'Hop #', dataIndex: 'hop', width: 70 },
@@ -132,15 +157,15 @@ const Dashboard: React.FC = () => {
                             </div>
                           ),
                         },
-                        { title: 'Loss %', dataIndex: 'loss', render: (val: number) => (val === undefined || val === null ? 'N/A' : `${val}`) },
+                        { title: 'Loss %', dataIndex: 'loss', render: (val: number) => renderLoss(val) },
                         {
                           title: 'Latency (Last/Avg/Best/Worst)',
                           render: (_, row: any) => (
                             <Space>
-                              <Tag color="green">{row.last && row.last > 0 ? `${row.last}ms` : 'N/A'}</Tag>
-                              <Tag color="blue">{row.avg && row.avg > 0 ? `${row.avg}ms` : 'N/A'}</Tag>
-                              <Tag>{row.best && row.best > 0 ? `${row.best}ms` : 'N/A'}</Tag>
-                              <Tag>{row.worst && row.worst > 0 ? `${row.worst}ms` : 'N/A'}</Tag>
+                              {renderLatencyTag(row.last, 'green')}
+                              {renderLatencyTag(row.avg, 'blue')}
+                              {renderLatencyTag(row.best)}
+                              {renderLatencyTag(row.worst)}
                             </Space>
                           ),
                         },

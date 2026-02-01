@@ -7,48 +7,43 @@
 ╚═════╝  ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝
 ```
 
+[🇺🇸 English](README.md)
+
 # 🛰️ RouteLens
 
-🇺🇸 [English](README.md) | 🇨🇳 [中文文档](#中文)
-
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yuanweize/RouteLens/release.yml?branch=master)](https://github.com/yuanweize/RouteLens/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yuanweize/RouteLens)](https://goreportcard.com/report/github.com/yuanweize/RouteLens)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release: v1.1.0](https://img.shields.io/badge/Release-v1.1.0-blue.svg)](https://github.com/yuanweize/RouteLens/releases)
+[![Docker Image](https://img.shields.io/badge/Docker-Coming%20Soon-lightgrey.svg?logo=docker)](https://github.com/yuanweize/RouteLens)
 
 ---
 
-<a name="中文"></a>
-
 ## 简介
 
-一款现代化、无 Agent 的网络链路观测平台，覆盖路由追踪、延迟/丢包/带宽测量，并提供可视化地图与历史趋势分析。
+RouteLens 是一款现代化、无 Agent 的网络链路观测平台，覆盖路由追踪、延迟/丢包/带宽测量，并提供可视化地图与历史趋势分析。
 
 ## ✨ 功能亮点
 
-- 🌍 **实时地图**：ECharts + GeoIP 可视化链路。
-- 🚀 **多模式探测**：ICMP、HTTP 下载、SSH 隧道、Iperf3。
-- 🕵️ **隐蔽测速**：低噪声、无侵入的带宽测量。
-- 📊 **历史趋势**：时序数据展示延迟与丢包曲线。
+- 🌍 **自动 GeoIP 注入**：启动时自动从 P3TERX 镜像下载 GeoIP 并注入链路地理信息。
+- ⚡ **真实延迟模式**：MTR 最后一跳分析，保证目标延迟与丢包精准。
+- 🎨 **现代化 UI**：Ant Design v5 + Dark Mode Algorithm。
+- 📊 **历史指标**：时序曲线展示延迟、丢包与速率。
 - 📦 **单文件交付**：一键安装系统服务。
-
-## 📸 截图
-
-- ![Dashboard](docs/images/dashboard.png)
-- ![Trace Map](docs/images/map.png)
 
 ## 🛠 架构图
 
 ```mermaid
 flowchart LR
-  A[探测引擎 (Go)] --> B[Go Channel]
-  B --> C[(SQLite)]
-  C --> D[API 服务 (Gin)]
-  D --> E[前端 (React + AntD)]
+  A["Scheduler"] --> B["MTR (JSON)"]
+  B --> C["Analyzer (Last Hop)"]
+  C --> D["SQLite"]
+  E["Bootstrapper"] --> F["GeoIP Downloader (P3TERX)"]
+  G["Gin API"] --> H["React App (AntD v5)"]
 ```
 
 ## 🚀 快速开始
 
-### 二进制安装
+### 二进制安装（推荐）
 
 ```bash
 wget https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_linux
@@ -56,7 +51,7 @@ chmod +x routelens_linux
 ./routelens_linux service install --port 8080
 ```
 
-访问 `http://localhost:8080` → `/setup` 完成初始化。
+访问 `http://localhost:8080` → `/setup` 完成初始化，首次运行将自动下载 GeoIP。
 
 ### Docker Compose
 
@@ -83,7 +78,7 @@ services:
 | RS_HTTP_PORT | 监听地址 | :8080 |
 | RS_DB_PATH | SQLite 路径 | ./data/routelens.db |
 | RS_JWT_SECRET | JWT 密钥 | 自动生成 |
-| RS_GEOIP_PATH | GeoIP 目录 | 空 |
+| RS_GEOIP_PATH | GeoIP 目录 | ./data/geoip |
 | RS_GEOIP_CITY_DB | GeoIP 城市库 | 空 |
 | RS_GEOIP_ISP_DB | GeoIP ISP 库 | 空 |
 | RS_PROBE_INTERVAL | 探测间隔（秒） | 30 |

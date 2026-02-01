@@ -113,9 +113,10 @@ func (s *Service) runPingTraceForTarget(t storage.Target) {
 	packetLoss := pingRes.LossRate
 
 	if mtrRes, mtrErr := prober.NewMTRRunner(t.Address).Run(); mtrErr == nil && mtrRes != nil && len(mtrRes.Hops) > 0 {
-		traceBytes = s.serializeTraceFromMTR(mtrRes)
-		latencyMs = selectTargetLatency(mtrRes, t.Address, latencyMs)
-		packetLoss = selectTargetLoss(mtrRes, t.Address, packetLoss)
+		selectedLatency, truncated := selectTargetLatency(mtrRes, latencyMs)
+		traceBytes = s.serializeTraceFromMTR(mtrRes, truncated)
+		latencyMs = selectedLatency
+		packetLoss = selectTargetLoss(mtrRes, packetLoss)
 	} else {
 		if mtrErr != nil {
 			log.Printf("MTR unavailable for %s: %v", t.Name, mtrErr)
@@ -301,8 +302,9 @@ type traceHop struct {
 }
 
 type tracePayload struct {
-	Target string     `json:"target"`
-	Hops   []traceHop `json:"hops"`
+	Target    string     `json:"target"`
+	Hops      []traceHop `json:"hops"`
+	Truncated bool       `json:"truncated,omitempty"`
 }
 
 func (s *Service) serializeTraceFromTraceroute(res *prober.TraceResult) []byte {
@@ -330,7 +332,7 @@ func (s *Service) serializeTraceFromTraceroute(res *prober.TraceResult) []byte {
 	return bytes
 }
 
-func (s *Service) serializeTraceFromMTR(res *prober.MTRResult) []byte {
+func (s *Service) serializeTraceFromMTR(res *prober.MTRResult, truncated bool) []byte {
 	if res == nil {
 		return []byte("[]")
 	}
@@ -353,7 +355,7 @@ func (s *Service) serializeTraceFromMTR(res *prober.MTRResult) []byte {
 		hops = append(hops, th)
 	}
 
-	payload := tracePayload{Target: res.Target, Hops: hops}
+	payload := tracePayload{Target: res.Target, Hops: hops, Truncated: truncated}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return []byte("[]")
@@ -397,17 +399,13 @@ func resolveIP(host string) string {
 	return host
 }
 
-func lastHopLoss(hops []prober.MTRHop, fallback float64) float64 {
-	if len(hops) == 0 {
-		return fallback
-	}
-	return hops[len(hops)-1].Loss
-}
-
 func initGeoProvider() *geoip.Provider {
 	cityDB := os.Getenv("RS_GEOIP_CITY_DB")
 	ispDB := os.Getenv("RS_GEOIP_ISP_DB")
 	geoPath := os.Getenv("RS_GEOIP_PATH")
+	if geoPath == "" && cityDB == "" && ispDB == "" {
+		geoPath = filepath.Join("data", "geoip")
+	}
 	if geoPath != "" {
 		if strings.HasSuffix(strings.ToLower(geoPath), ".mmdb") {
 			if cityDB == "" {
@@ -429,11 +427,8 @@ func initGeoProvider() *geoip.Provider {
 	}
 
 	if cityDB != "" {
-		if _, err := os.Stat(cityDB); err != nil {
-			log.Printf("GeoIP city DB missing at %s, attempting download...", cityDB)
-			if dlErr := downloadGeoIP(cityDB, "https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb"); dlErr != nil {
-				log.Printf("GeoIP download failed: %v", dlErr)
-			}
+		if dlErr := ensureGeoIPDatabase(cityDB); dlErr != nil {
+			log.Printf("GeoIP download failed: %v", dlErr)
 		}
 	}
 	if ispDB != "" {
@@ -475,44 +470,45 @@ func downloadGeoIP(path string, url string) error {
 	return err
 }
 
-func selectTargetLatency(res *prober.MTRResult, target string, fallback float64) float64 {
-	if res == nil || len(res.Hops) == 0 {
-		return fallback
-	}
-	targetIP := resolveIP(target)
-	for i := len(res.Hops) - 1; i >= 0; i-- {
-		h := res.Hops[i]
-		if targetIP != "" && resolveIP(h.Host) == targetIP {
-			if h.Avg > 0 {
-				return h.Avg
-			}
-			if h.Last > 0 {
-				return h.Last
-			}
-		}
-		if h.Avg > 0 {
-			return h.Avg
-		}
-		if h.Last > 0 {
-			return h.Last
+func ensureGeoIPDatabase(path string) error {
+	const minSizeBytes = 10 * 1024 * 1024
+	if info, err := os.Stat(path); err == nil {
+		if info.Size() > minSizeBytes {
+			return nil
 		}
 	}
-	return fallback
+	log.Printf("[GeoIP] Downloading database from P3TERX mirror...")
+	return downloadGeoIP(path, "https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb")
 }
 
-func selectTargetLoss(res *prober.MTRResult, target string, fallback float64) float64 {
+func selectTargetLatency(res *prober.MTRResult, fallback float64) (float64, bool) {
+	if res == nil || len(res.Hops) == 0 {
+		return fallback, false
+	}
+	last := res.Hops[len(res.Hops)-1]
+	if last.Loss < 100 {
+		if last.Avg > 0 {
+			return last.Avg, false
+		}
+		if last.Last > 0 {
+			return last.Last, false
+		}
+	}
+	for i := len(res.Hops) - 2; i >= 0; i-- {
+		h := res.Hops[i]
+		if h.Avg > 0 {
+			return h.Avg, true
+		}
+		if h.Last > 0 {
+			return h.Last, true
+		}
+	}
+	return fallback, true
+}
+
+func selectTargetLoss(res *prober.MTRResult, fallback float64) float64 {
 	if res == nil || len(res.Hops) == 0 {
 		return fallback
 	}
-	targetIP := resolveIP(target)
-	for i := len(res.Hops) - 1; i >= 0; i-- {
-		h := res.Hops[i]
-		if targetIP != "" && resolveIP(h.Host) == targetIP {
-			return h.Loss
-		}
-		if h.Loss > 0 {
-			return h.Loss
-		}
-	}
-	return fallback
+	return res.Hops[len(res.Hops)-1].Loss
 }
