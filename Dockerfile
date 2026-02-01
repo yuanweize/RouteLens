@@ -1,5 +1,5 @@
 # Frontend Build Stage
-FROM node:20-alpine AS web-builder
+FROM --platform=$BUILDPLATFORM node:20-alpine AS web-builder
 
 WORKDIR /web
 
@@ -10,12 +10,12 @@ COPY web/ ./
 RUN npm run build
 
 # Build Stage
-FROM golang:1.24-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -26,7 +26,7 @@ COPY . .
 COPY --from=web-builder /web/dist ./web/dist
 
 # Build with CGO disabled (pure Go sqlite)
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o routelens ./cmd/server
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-s -w" -o routelens ./cmd/server
 
 # Final Stage
 FROM alpine:latest
