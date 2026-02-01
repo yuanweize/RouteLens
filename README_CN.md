@@ -95,4 +95,4 @@ services:
 
 ## License
 
-MIT
+MIT，详见 [LICENSE](LICENSE)。
