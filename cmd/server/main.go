@@ -1,7 +1,10 @@
 package main
 
 import (
+	_ "embed"
+	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/yuanweize/RouteLens/internal/api"
 	"github.com/yuanweize/RouteLens/internal/cli"
@@ -10,18 +13,40 @@ import (
 	"github.com/yuanweize/RouteLens/web"
 )
 
-// Version information - set via ldflags at build time
+// Embed the version manifest file (single source of truth)
+//
+//go:embed version.json
+var versionManifest []byte
+
+// Version information - can be overridden via ldflags at build time
+// If not set via ldflags, will read from embedded version.json
 var (
-	version = "2.2.0"
+	version = ""
 	commit  = "unknown"
 	date    = "unknown"
 )
 
 func init() {
+	// If version not set via ldflags, read from embedded manifest
+	if version == "" {
+		version = readVersionFromManifest()
+	}
 	// Inject version info into API package
 	api.Version = version
 	api.Commit = commit
 	api.BuildDate = date
+}
+
+// readVersionFromManifest reads version from embedded version.json
+func readVersionFromManifest() string {
+	var manifest map[string]string
+	if err := json.Unmarshal(versionManifest, &manifest); err != nil {
+		return "dev"
+	}
+	if v, ok := manifest["."]; ok && v != "" {
+		return strings.TrimPrefix(v, "v")
+	}
+	return "dev"
 }
 
 func main() {

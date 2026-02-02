@@ -8,6 +8,8 @@ before:
   hooks:
     - go mod tidy
     - test -d web/dist
+    # Copy version manifest to cmd/server for embedding
+    - cp .github/.release-please-manifest.json cmd/server/version.json
 
 builds:
   - id: routelens

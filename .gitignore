@@ -15,6 +15,9 @@ build/
 *.deb
 *.rpm
 
+# Generated version file (copied from .github/.release-please-manifest.json during build)
+cmd/server/version.json
+
 # Data & runtime
 data/
 *.db
