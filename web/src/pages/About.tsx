@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Typography, Row, Col, Tag, Button, Space, Divider, Steps, Spin } from 'antd';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, Typography, Row, Col, Tag, Button, Space, Divider, Steps, Spin, Tooltip } from 'antd';
 import {
   DeploymentUnitOutlined,
   GithubOutlined,
@@ -12,29 +12,62 @@ import {
   AppleOutlined,
   WindowsOutlined,
   LinuxOutlined,
+  FileZipOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
-import { getSystemInfo, type SystemInfo } from '../api';
+import { getSystemInfo, getReleases, type SystemInfo, type ReleasesInfo, type ReleaseAsset } from '../api';
 
 const { Title, Text, Paragraph } = Typography;
 
 const GITHUB_URL = 'https://github.com/yuanweize/RouteLens';
 const RELEASES_URL = `${GITHUB_URL}/releases`;
 
+// Helper to format file size
+const formatSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+// Helper to parse asset info from filename
+const parseAssetInfo = (name: string): { os: string; arch: string; format: string; icon: React.ReactNode; color: string } | null => {
+  const patterns: Record<string, { os: string; arch: string; icon: React.ReactNode; color: string }> = {
+    'darwin_arm64': { os: 'macOS', arch: 'Apple Silicon', icon: <AppleOutlined />, color: '#000' },
+    'darwin_amd64': { os: 'macOS', arch: 'Intel', icon: <AppleOutlined />, color: '#555' },
+    'linux_amd64': { os: 'Linux', arch: 'x64', icon: <LinuxOutlined />, color: '#FCC624' },
+    'linux_arm64': { os: 'Linux', arch: 'ARM64', icon: <LinuxOutlined />, color: '#E95420' },
+    'windows_amd64': { os: 'Windows', arch: 'x64', icon: <WindowsOutlined />, color: '#0078D4' },
+  };
+  
+  for (const [key, info] of Object.entries(patterns)) {
+    if (name.includes(key)) {
+      let format = 'Binary';
+      if (name.endsWith('.tar.gz')) format = 'tar.gz';
+      else if (name.endsWith('.zip')) format = 'zip';
+      else if (name.endsWith('.deb')) format = 'deb';
+      else if (name.endsWith('.rpm')) format = 'rpm';
+      return { ...info, format };
+    }
+  }
+  return null;
+};
+
 const About: React.FC = () => {
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  const [releases, setReleases] = useState<ReleasesInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const info = await getSystemInfo();
+        const [info, rel] = await Promise.all([getSystemInfo(), getReleases()]);
         setSystemInfo(info);
+        setReleases(rel);
       } catch (e) {
-        console.error('Failed to fetch system info:', e);
+        console.error('Failed to fetch info:', e);
       } finally {
         setLoading(false);
       }
@@ -42,10 +75,44 @@ const About: React.FC = () => {
     fetchInfo();
   }, []);
 
-  // Dynamic version and download URL
+  // Dynamic version
   const currentVersion = systemInfo?.version || 'latest';
-  // Use GitHub's "latest" redirect for downloads - always gets the newest release
-  const latestDownloadBase = `${GITHUB_URL}/releases/latest/download`;
+  const releaseVersion = releases?.tag_name || '';
+
+  // Group assets by OS/arch, preferring tar.gz/zip over deb/rpm
+  const groupedDownloads = useMemo(() => {
+    if (!releases?.assets) return [];
+    
+    const groups: Record<string, { primary: ReleaseAsset; packages: ReleaseAsset[]; info: ReturnType<typeof parseAssetInfo> }> = {};
+    
+    for (const asset of releases.assets) {
+      const info = parseAssetInfo(asset.name);
+      if (!info) continue;
+      
+      const key = `${info.os}_${info.arch}`;
+      if (!groups[key]) {
+        groups[key] = { primary: asset, packages: [], info };
+      }
+      
+      // Prefer tar.gz/zip as primary download
+      if (info.format === 'tar.gz' || info.format === 'zip') {
+        groups[key].primary = asset;
+      } else if (info.format === 'deb' || info.format === 'rpm') {
+        groups[key].packages.push(asset);
+      }
+    }
+    
+    // Sort: macOS first, then Linux, then Windows
+    const order = ['macOS', 'Linux', 'Windows'];
+    return Object.values(groups).sort((a, b) => {
+      const aIdx = order.indexOf(a.info!.os);
+      const bIdx = order.indexOf(b.info!.os);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      // Within same OS, prefer ARM64/Apple Silicon first
+      if (a.info!.arch.includes('ARM') || a.info!.arch.includes('Apple')) return -1;
+      return 1;
+    });
+  }, [releases]);
 
   const techStack = [
     { name: 'Go 1.24', color: '#00ADD8' },
@@ -54,14 +121,6 @@ const About: React.FC = () => {
     { name: 'Ant Design v5', color: '#1677ff' },
     { name: 'ECharts', color: '#E43961' },
     { name: 'Vite', color: '#646CFF' },
-  ];
-
-  const downloads = [
-    { os: 'macOS', arch: 'Apple Silicon', icon: <AppleOutlined />, file: 'routelens-darwin-arm64', color: '#000' },
-    { os: 'macOS', arch: 'Intel', icon: <AppleOutlined />, file: 'routelens-darwin-amd64', color: '#555' },
-    { os: 'Linux', arch: 'x64', icon: <LinuxOutlined />, file: 'routelens-linux-amd64', color: '#FCC624' },
-    { os: 'Linux', arch: 'ARM64', icon: <LinuxOutlined />, file: 'routelens-linux-arm64', color: '#E95420' },
-    { os: 'Windows', arch: 'x64', icon: <WindowsOutlined />, file: 'routelens-windows-amd64.exe', color: '#0078D4' },
   ];
 
   const cardStyle: React.CSSProperties = {
@@ -227,7 +286,7 @@ const About: React.FC = () => {
               <Space>
                 <CloudDownloadOutlined style={{ fontSize: 18, color: '#1677ff' }} />
                 <span>{t('about.downloads')}</span>
-                <Tag color="blue">{loading ? '...' : `v${currentVersion.replace(/^v/, '')}`}</Tag>
+                {releaseVersion && <Tag color="blue">{releaseVersion}</Tag>}
               </Space>
             }
             extra={
@@ -243,40 +302,74 @@ const About: React.FC = () => {
             style={cardStyle}
             hoverable
           >
-            <Row gutter={[12, 12]}>
-              {downloads.map((dl) => (
-                <Col xs={24} sm={12} md={8} lg={4} key={dl.file}>
-                  <Button
-                    type="default"
-                    href={`${latestDownloadBase}/${dl.file}`}
-                    target="_blank"
-                    block
-                    style={{
-                      height: 'auto',
-                      padding: '12px 8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4,
-                      borderRadius: 8,
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = dl.color;
-                      e.currentTarget.style.color = dl.color;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '';
-                      e.currentTarget.style.color = '';
-                    }}
-                  >
-                    <span style={{ fontSize: 24 }}>{dl.icon}</span>
-                    <Text strong style={{ fontSize: 13 }}>{dl.os}</Text>
-                    <Text type="secondary" style={{ fontSize: 11 }}>{dl.arch}</Text>
-                  </Button>
-                </Col>
-              ))}
-            </Row>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+            ) : groupedDownloads.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 24 }}>
+                <Text type="secondary">{t('about.noReleases')}</Text>
+                <br />
+                <Button type="link" href={RELEASES_URL} target="_blank">
+                  {t('about.viewOnGitHub')}
+                </Button>
+              </div>
+            ) : (
+              <Row gutter={[12, 12]}>
+                {groupedDownloads.map((group) => (
+                  <Col xs={24} sm={12} md={8} lg={4} key={group.primary.name}>
+                    <Tooltip title={`${formatSize(group.primary.size)} - ${group.info!.format}`}>
+                      <Button
+                        type="default"
+                        href={group.primary.download_url}
+                        target="_blank"
+                        block
+                        style={{
+                          height: 'auto',
+                          padding: '12px 8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 4,
+                          borderRadius: 8,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = group.info!.color;
+                          e.currentTarget.style.color = group.info!.color;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
+                        <span style={{ fontSize: 24 }}>{group.info!.icon}</span>
+                        <Text strong style={{ fontSize: 13 }}>{group.info!.os}</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>{group.info!.arch}</Text>
+                        <Text type="secondary" style={{ fontSize: 10 }}>{group.info!.format}</Text>
+                      </Button>
+                    </Tooltip>
+                    {/* Package downloads (deb/rpm) */}
+                    {group.packages.length > 0 && (
+                      <Space size={4} style={{ marginTop: 4, justifyContent: 'center', width: '100%' }}>
+                        {group.packages.map((pkg) => (
+                          <Tooltip key={pkg.name} title={`${formatSize(pkg.size)}`}>
+                            <Button
+                              size="small"
+                              type="text"
+                              href={pkg.download_url}
+                              target="_blank"
+                              icon={<FileZipOutlined />}
+                              style={{ fontSize: 11 }}
+                            >
+                              {pkg.name.endsWith('.deb') ? '.deb' : '.rpm'}
+                            </Button>
+                          </Tooltip>
+                        ))}
+                      </Space>
+                    )}
+                  </Col>
+                ))}
+              </Row>
+            )}
           </Card>
         </Col>
 

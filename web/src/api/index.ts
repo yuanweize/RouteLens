@@ -76,3 +76,18 @@ export const getSystemInfo = () => request.get<SystemInfo>('/api/v1/system/info'
 export const checkUpdate = () => request.get<UpdateCheckResult>('/api/v1/system/check-update');
 
 export const performUpdate = () => request.post<UpdateResult>('/api/v1/system/update');
+
+// Release Assets API
+export interface ReleaseAsset {
+  name: string;
+  download_url: string;
+  size: number;
+}
+
+export interface ReleasesInfo {
+  tag_name: string;
+  published_at: string;
+  assets: ReleaseAsset[];
+}
+
+export const getReleases = () => request.get<ReleasesInfo>('/api/v1/system/releases');

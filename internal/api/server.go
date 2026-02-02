@@ -127,7 +127,8 @@ func (s *Server) setupRoutes() {
 	s.router.POST("/api/v1/setup", s.handleSetup)
 	// Login with rate limiting: 5 attempts per IP per minute
 	s.router.POST("/login", LoginRateLimitMiddleware(loginRateLimiter), s.handleLogin)
-	s.router.GET("/api/v1/system/info", s.handleSystemInfo) // Public: version info is not sensitive
+	s.router.GET("/api/v1/system/info", s.handleSystemInfo)      // Public: version info is not sensitive
+	s.router.GET("/api/v1/system/releases", s.handleGetReleases) // Public: GitHub releases info
 
 	// Protected API
 	api := s.router.Group("/api/v1")

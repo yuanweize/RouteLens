@@ -273,3 +273,81 @@ func (s *Server) handlePerformUpdate(c *gin.Context) {
 		os.Exit(0)
 	}()
 }
+
+// ReleaseAsset represents a downloadable release asset
+type ReleaseAsset struct {
+	Name        string `json:"name"`
+	DownloadURL string `json:"download_url"`
+	Size        int64  `json:"size"`
+}
+
+// ReleasesResponse represents the latest release info with assets
+type ReleasesResponse struct {
+	TagName     string         `json:"tag_name"`
+	PublishedAt string         `json:"published_at"`
+	Assets      []ReleaseAsset `json:"assets"`
+}
+
+// handleGetReleases returns the latest release assets from GitHub
+func (s *Server) handleGetReleases(c *gin.Context) {
+	client := &http.Client{Timeout: 15 * time.Second}
+	token := getGitHubToken()
+
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubSlug)
+	req, _ := http.NewRequest("GET", apiURL, nil)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("User-Agent", "RouteLens-Updater")
+	if token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Warn("releases", "GitHub API request failed: %v", err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to fetch releases"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		logging.Warn("releases", "GitHub API returned %d", resp.StatusCode)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "GitHub API unavailable"})
+		return
+	}
+
+	var release struct {
+		TagName     string `json:"tag_name"`
+		PublishedAt string `json:"published_at"`
+		Assets      []struct {
+			Name               string `json:"name"`
+			BrowserDownloadURL string `json:"browser_download_url"`
+			Size               int64  `json:"size"`
+		} `json:"assets"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		logging.Warn("releases", "Failed to parse release: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse release data"})
+		return
+	}
+
+	// Filter and transform assets (only include downloadable binaries)
+	assets := make([]ReleaseAsset, 0)
+	for _, a := range release.Assets {
+		// Skip checksums and source archives
+		if strings.HasSuffix(a.Name, ".txt") || strings.HasSuffix(a.Name, ".sha256") {
+			continue
+		}
+		assets = append(assets, ReleaseAsset{
+			Name:        a.Name,
+			DownloadURL: a.BrowserDownloadURL,
+			Size:        a.Size,
+		})
+	}
+
+	c.JSON(http.StatusOK, ReleasesResponse{
+		TagName:     release.TagName,
+		PublishedAt: release.PublishedAt,
+		Assets:      assets,
+	})
+}

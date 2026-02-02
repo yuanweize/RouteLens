@@ -178,6 +178,8 @@
     "documentation": "查看文档",
     "downloads": "下载安装",
     "allReleases": "全部版本",
+    "noReleases": "暂无可用版本",
+    "viewOnGitHub": "在 GitHub 上查看",
     "quickGuide": "快速入门指南",
     "guide": {
       "dashboard": "仪表盘",

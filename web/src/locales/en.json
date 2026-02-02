@@ -178,6 +178,8 @@
     "documentation": "Documentation",
     "downloads": "Downloads",
     "allReleases": "All Releases",
+    "noReleases": "No releases available",
+    "viewOnGitHub": "View releases on GitHub",
     "quickGuide": "Quick Start Guide",
     "guide": {
       "dashboard": "Dashboard",
