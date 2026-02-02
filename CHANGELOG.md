@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.3](https://github.com/yuanweize/RouteLens/compare/v2.2.2...v2.2.3) (2026-02-02)
+
+
+### Bug Fixes
+
+* light theme styling issues ([bc92b64](https://github.com/yuanweize/RouteLens/commit/bc92b645be08c078e548a585723bc56c33cae936))
+
 ## [2.2.2](https://github.com/yuanweize/RouteLens/compare/v2.2.1...v2.2.2) (2026-02-02)
 
 
