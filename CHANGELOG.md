@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/yuanweize/RouteLens/compare/v1.3.0...v1.3.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* **security:** critical security hardening for v1.3.1 ([7488591](https://github.com/yuanweize/RouteLens/commit/7488591b590f862594beabe92dd5ef0fea7a4c61))
+
 ## [1.3.0](https://github.com/yuanweize/RouteLens/compare/v1.2.9...v1.3.0) (2026-02-01)
 
 
