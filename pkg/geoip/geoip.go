@@ -320,7 +320,7 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 			parts := strings.Split(region, "|")
 			if len(parts) >= 4 && parts[0] == "中国" {
 				// This is a China IP with detailed info
-				loc.Country = "中国"                         // Always use Chinese for zh-CN
+				loc.Country = "中国"                           // Always use Chinese for zh-CN
 				loc.CountryEN = translateCountry("CN", "en") // "China" from CLDR
 				loc.ISOCode = "CN"
 
