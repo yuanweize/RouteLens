@@ -91,16 +91,29 @@ const Dashboard: React.FC = () => {
   const avgLoss = history.length
     ? history.reduce((sum: number, h: any) => sum + (h.packet_loss || h.PacketLoss || 0), 0) / history.length
     : 0;
-  const lastSpeed = history.length
-    ? history[history.length - 1].speed_down || history[history.length - 1].SpeedDown || 0
-    : 0;
+  
+  // Find the most recent record with speed data (speed tests run less frequently than pings)
+  const latestSpeedRecord = useMemo(() => {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const h = history[i];
+      const down = h.speed_down || h.SpeedDown || 0;
+      const up = h.speed_up || h.SpeedUp || 0;
+      if (down > 0 || up > 0) {
+        return { down, up, time: h.created_at || h.CreatedAt };
+      }
+    }
+    return null;
+  }, [history]);
+
+  const lastSpeedDown = latestSpeedRecord?.down || 0;
+  const lastSpeedUp = latestSpeedRecord?.up || 0;
 
   // Speed test status indicator
   const isSpeedEnabled = selectedMeta && selectedMeta.probe_type !== 'MODE_ICMP' && selectedMeta.probe_type !== '';
   const hasSpeedError = isSpeedEnabled && selectedMeta?.last_error;
   const speedStatusIcon = useMemo(() => {
     if (!isSpeedEnabled) return null;
-    if (lastSpeed > 0) {
+    if (lastSpeedDown > 0) {
       return <CheckCircleOutlined style={{ color: '#52c41a', marginLeft: 8 }} />;
     }
     if (hasSpeedError) {
@@ -111,7 +124,7 @@ const Dashboard: React.FC = () => {
       );
     }
     return <MinusCircleOutlined style={{ color: '#faad14', marginLeft: 8 }} />;
-  }, [isSpeedEnabled, lastSpeed, hasSpeedError, selectedMeta?.last_error]);
+  }, [isSpeedEnabled, lastSpeedDown, hasSpeedError, selectedMeta?.last_error]);
 
   const traceData = useMemo(() => {
     if (!trace) return null;
@@ -241,29 +254,45 @@ const Dashboard: React.FC = () => {
 
       <Row gutter={[16, 16]}>
         <Col span={8}>
-          <Card className="page-card">
+          <Card className="page-card" style={{ height: 120 }}>
             <Statistic title={t('dashboard.avgLatency')} value={avgLatency} suffix="ms" precision={1} />
           </Card>
         </Col>
         <Col span={8}>
-          <Card className="page-card">
+          <Card className="page-card" style={{ height: 120 }}>
             <Statistic title={t('dashboard.packetLoss')} value={avgLoss} suffix="%" precision={2} />
           </Card>
         </Col>
         <Col span={8}>
-          <Card className="page-card">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Statistic
-                title={t('dashboard.downlink')}
-                value={isSpeedEnabled ? lastSpeed : t('common.na')}
-                suffix={isSpeedEnabled ? 'Mbps' : ''}
-                precision={1}
-              />
-              {speedStatusIcon}
+          <Card className="page-card" style={{ height: 120 }}>
+            <div style={{ marginBottom: 8 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+                {t('dashboard.bandwidth') || 'Bandwidth'} {speedStatusIcon}
+              </Typography.Text>
             </div>
-            {hasSpeedError && (
-              <Typography.Text type="danger" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-                {selectedMeta?.last_error}
+            <Row>
+              <Col span={12}>
+                <Statistic
+                  title={<span style={{ fontSize: 12 }}>↓ {t('dashboard.down') || 'Down'}</span>}
+                  value={isSpeedEnabled ? lastSpeedDown : '-'}
+                  suffix={isSpeedEnabled && lastSpeedDown > 0 ? 'Mbps' : ''}
+                  precision={1}
+                  valueStyle={{ fontSize: 20 }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title={<span style={{ fontSize: 12 }}>↑ {t('dashboard.up') || 'Up'}</span>}
+                  value={isSpeedEnabled ? lastSpeedUp : '-'}
+                  suffix={isSpeedEnabled && lastSpeedUp > 0 ? 'Mbps' : ''}
+                  precision={1}
+                  valueStyle={{ fontSize: 20 }}
+                />
+              </Col>
+            </Row>
+            {latestSpeedRecord?.time && (lastSpeedDown > 0 || lastSpeedUp > 0) && (
+              <Typography.Text type="secondary" style={{ fontSize: 10, position: 'absolute', bottom: 8, right: 12 }}>
+                {new Date(latestSpeedRecord.time).toLocaleTimeString()}
               </Typography.Text>
             )}
           </Card>

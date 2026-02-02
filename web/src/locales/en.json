@@ -21,7 +21,9 @@
     "disabled": "Disabled",
     "actions": "Actions",
     "status": "Status",
-    "na": "N/A"
+    "na": "N/A",
+    "days": "days",
+    "refresh": "Refresh"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -37,12 +39,24 @@
     "packetLoss": "Packet Loss",
     "downlink": "Downlink",
     "uplink": "Uplink",
+    "bandwidth": "Bandwidth",
+    "down": "Down",
+    "up": "Up",
     "routeMap": "Route Map",
     "mtrHopDetails": "MTR Hop Details",
     "truncated": "Truncated",
     "historicalMetrics": "Historical Metrics",
     "selectTarget": "Select Target",
-    "probeNow": "Probe Now"
+    "probeNow": "Probe Now",
+    "lastTest": "Last"
+  },
+  "timeRange": {
+    "1h": "1 Hour",
+    "6h": "6 Hours",
+    "12h": "12 Hours",
+    "24h": "24 Hours",
+    "7d": "7 Days",
+    "30d": "30 Days"
   },
   "hopTable": {
     "hop": "#",
@@ -89,7 +103,9 @@
     "language": "Language",
     "tabs": {
       "security": "Security",
-      "about": "About & Updates"
+      "about": "About & Updates",
+      "database": "Database",
+      "monitoring": "Monitoring"
     },
     "systemInfo": "System Information",
     "softwareUpdate": "Software Update",
@@ -141,7 +157,33 @@
     "noUpdate": "No update available",
     "updatingRouteLens": "Updating RouteLens",
     "updateCompleteRestarting": "Update complete! Restarting service...",
-    "downloadingInstalling": "Downloading and installing update..."
+    "downloadingInstalling": "Downloading and installing update...",
+    "databaseStats": "Database Statistics",
+    "databaseActions": "Database Actions",
+    "dbSize": "Database Size",
+    "recordCount": "Records",
+    "targetCount": "Targets",
+    "retentionDays": "Retention (days)",
+    "oldestRecord": "Oldest Record",
+    "dbCleanWarning": "Cleaning will permanently delete old monitoring records",
+    "confirmClean": "Clean old records?",
+    "confirmCleanDesc": "Delete records older than {{days}} days",
+    "cleanOldRecords": "Clean Old Records",
+    "confirmVacuum": "Optimize database?",
+    "confirmVacuumDesc": "This may take a moment for large databases",
+    "optimizeDatabase": "Optimize (Vacuum)",
+    "dbCleanSuccess": "Deleted {{count}} old records",
+    "dbCleanFailed": "Failed to clean database",
+    "dbVacuumSuccess": "Database optimized successfully",
+    "dbVacuumFailed": "Failed to optimize database",
+    "monitoringSettings": "Monitoring Settings",
+    "retentionDaysTooltip": "How long to keep monitoring data",
+    "speedTestInterval": "Speed Test Interval (min)",
+    "speedTestIntervalTooltip": "How often to run speed tests",
+    "pingInterval": "Ping Interval (sec)",
+    "pingIntervalTooltip": "How often to run ping/trace",
+    "settingsSaved": "Settings saved",
+    "settingsSaveFailed": "Failed to save settings"
   },
   "logs": {
     "title": "System Logs",

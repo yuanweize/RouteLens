@@ -156,13 +156,13 @@ func (d *DB) HasAnyUser() bool {
 
 // DatabaseStats returns database statistics
 type DatabaseStats struct {
-	SizeBytes      int64  `json:"size_bytes"`
-	SizeHuman      string `json:"size_human"`
-	RecordCount    int64  `json:"record_count"`
-	TargetCount    int64  `json:"target_count"`
-	OldestRecord   string `json:"oldest_record,omitempty"`
-	NewestRecord   string `json:"newest_record,omitempty"`
-	RetentionDays  int    `json:"retention_days"`
+	SizeBytes     int64  `json:"size_bytes"`
+	SizeHuman     string `json:"size_human"`
+	RecordCount   int64  `json:"record_count"`
+	TargetCount   int64  `json:"target_count"`
+	OldestRecord  string `json:"oldest_record,omitempty"`
+	NewestRecord  string `json:"newest_record,omitempty"`
+	RetentionDays int    `json:"retention_days"`
 }
 
 // GetDatabaseStats returns statistics about the database

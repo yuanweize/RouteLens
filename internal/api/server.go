@@ -573,9 +573,9 @@ func (s *Server) handleVacuumDatabase(c *gin.Context) {
 
 // Settings management
 type SystemSettings struct {
-	RetentionDays int `json:"retention_days"`
+	RetentionDays     int `json:"retention_days"`
 	SpeedTestInterval int `json:"speed_test_interval_minutes"`
-	PingInterval int `json:"ping_interval_seconds"`
+	PingInterval      int `json:"ping_interval_seconds"`
 }
 
 func (s *Server) handleGetSettings(c *gin.Context) {

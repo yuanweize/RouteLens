@@ -21,7 +21,9 @@
     "disabled": "已禁用",
     "actions": "操作",
     "status": "状态",
-    "na": "N/A"
+    "na": "N/A",
+    "days": "天",
+    "refresh": "刷新"
   },
   "nav": {
     "dashboard": "仪表盘",
@@ -37,12 +39,24 @@
     "packetLoss": "丢包率",
     "downlink": "下行带宽",
     "uplink": "上行带宽",
+    "bandwidth": "带宽",
+    "down": "下行",
+    "up": "上行",
     "routeMap": "路由地图",
     "mtrHopDetails": "MTR 跳数详情",
     "truncated": "已截断",
     "historicalMetrics": "历史数据",
     "selectTarget": "选择目标",
-    "probeNow": "立即探测"
+    "probeNow": "立即探测",
+    "lastTest": "最近测速"
+  },
+  "timeRange": {
+    "1h": "1 小时",
+    "6h": "6 小时",
+    "12h": "12 小时",
+    "24h": "24 小时",
+    "7d": "7 天",
+    "30d": "30 天"
   },
   "hopTable": {
     "hop": "#",
@@ -89,7 +103,9 @@
     "language": "语言",
     "tabs": {
       "security": "安全设置",
-      "about": "关于与更新"
+      "about": "关于与更新",
+      "database": "数据库",
+      "monitoring": "监控设置"
     },
     "systemInfo": "系统信息",
     "softwareUpdate": "软件更新",
@@ -141,7 +157,33 @@
     "noUpdate": "暂无可用更新",
     "updatingRouteLens": "正在更新 RouteLens",
     "updateCompleteRestarting": "更新完成！正在重启服务...",
-    "downloadingInstalling": "正在下载并安装更新..."
+    "downloadingInstalling": "正在下载并安装更新...",
+    "databaseStats": "数据库统计",
+    "databaseActions": "数据库操作",
+    "dbSize": "数据库大小",
+    "recordCount": "记录数",
+    "targetCount": "目标数",
+    "retentionDays": "保留天数",
+    "oldestRecord": "最早记录",
+    "dbCleanWarning": "清理将永久删除旧的监控记录",
+    "confirmClean": "清理旧记录？",
+    "confirmCleanDesc": "删除 {{days}} 天前的记录",
+    "cleanOldRecords": "清理旧记录",
+    "confirmVacuum": "优化数据库？",
+    "confirmVacuumDesc": "对于大型数据库可能需要一些时间",
+    "optimizeDatabase": "优化 (Vacuum)",
+    "dbCleanSuccess": "已删除 {{count}} 条旧记录",
+    "dbCleanFailed": "清理数据库失败",
+    "dbVacuumSuccess": "数据库优化成功",
+    "dbVacuumFailed": "优化数据库失败",
+    "monitoringSettings": "监控设置",
+    "retentionDaysTooltip": "监控数据的保留时间",
+    "speedTestInterval": "测速间隔 (分钟)",
+    "speedTestIntervalTooltip": "执行带宽测试的频率",
+    "pingInterval": "Ping 间隔 (秒)",
+    "pingIntervalTooltip": "执行 Ping/Trace 的频率",
+    "settingsSaved": "设置已保存",
+    "settingsSaveFailed": "保存设置失败"
   },
   "logs": {
     "title": "系统日志",
