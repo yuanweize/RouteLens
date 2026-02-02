@@ -174,7 +174,7 @@ flowchart LR
 
 ---
 
-## � Development
+## 🔨 Development
 
 ### Build from Source
 
@@ -207,7 +207,7 @@ make version
 
 ---
 
-## �🔐 Security
+## 🔐 Security
 
 RouteLens includes comprehensive security hardening:
 
