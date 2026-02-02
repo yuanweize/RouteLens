@@ -227,17 +227,17 @@ func (s *Server) handleUpdatePassword(c *gin.Context) {
 		return
 	}
 
-	// For simplicity, update for "admin" or current user if we had identity in context
-	// Currently all protected routes are for admin
-	user, _ := s.db.GetUser("admin")
-	if user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Admin user not found"})
+	// Get the first (and only) user in the system
+	// This is a single-user system, so we update the only existing user
+	user, err := s.db.GetFirstUser()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No user found in system"})
 		return
 	}
 
+	// Hash new password and update the existing record
 	hashed, _ := auth.HashPassword(req.NewPassword)
-	user.Password = hashed
-	if err := s.db.SaveUser(user); err != nil {
+	if err := s.db.UpdateUserPassword(user.ID, hashed); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

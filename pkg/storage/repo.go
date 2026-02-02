@@ -101,6 +101,19 @@ func (d *DB) GetUser(username string) (*User, error) {
 	return &u, err
 }
 
+// GetFirstUser returns the first user in the database (single-user system)
+func (d *DB) GetFirstUser() (*User, error) {
+	var u User
+	err := d.conn.First(&u).Error
+	return &u, err
+}
+
+// UpdateUserPassword updates the password for a specific user ID
+// This avoids GORM's Save() which can INSERT if ID is missing
+func (d *DB) UpdateUserPassword(userID uint, hashedPassword string) error {
+	return d.conn.Model(&User{}).Where("id = ?", userID).Update("password", hashedPassword).Error
+}
+
 func (d *DB) SaveUser(u *User) error {
 	return d.conn.Save(u).Error
 }
