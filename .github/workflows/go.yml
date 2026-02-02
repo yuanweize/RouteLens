@@ -51,6 +51,9 @@ jobs:
     - name: Verify dependencies
       run: go mod verify
 
+    - name: Prepare version file
+      run: cp .github/.release-please-manifest.json cmd/server/version.json
+
     - name: Build
       run: go build -v ./...
 

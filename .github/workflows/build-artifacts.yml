@@ -76,6 +76,9 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
+      - name: Prepare version file
+        run: cp .github/.release-please-manifest.json cmd/server/version.json
+
       - name: Build binary
         run: |
           mkdir -p build

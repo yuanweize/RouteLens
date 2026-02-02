@@ -22,6 +22,9 @@ RUN go mod download
 
 COPY . .
 
+# Copy version file for embedding
+COPY .github/.release-please-manifest.json ./cmd/server/version.json
+
 # Copy built frontend assets
 COPY --from=web-builder /web/dist ./web/dist
 
