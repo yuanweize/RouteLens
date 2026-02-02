@@ -161,11 +161,11 @@ func (s *Service) runPingTraceForTarget(t storage.Target) {
 		logging.Error("probe", "[ICMP] Ping failed for %s (%s): %v", t.Name, t.Address, err)
 		return
 	}
-	logging.Info("probe", "[ICMP] Ping OK for %s: latency=%.1fms, loss=%.1f%%", t.Name, float64(pingRes.AvgRtt.Milliseconds()), pingRes.LossRate)
+	logging.Info("probe", "[ICMP] Ping OK for %s: latency=%.1fms, loss=%.1f%%", t.Name, float64(pingRes.AvgRtt.Microseconds())/1000.0, pingRes.LossRate)
 
 	// 2. MTR (preferred) or Traceroute
 	var traceBytes []byte
-	latencyMs := float64(pingRes.AvgRtt.Milliseconds())
+	latencyMs := float64(pingRes.AvgRtt.Microseconds()) / 1000.0 // Use Microseconds for sub-ms precision
 	packetLoss := pingRes.LossRate
 
 	if mtrRes, mtrErr := prober.NewMTRRunner(t.Address).Run(); mtrErr == nil && mtrRes != nil && len(mtrRes.Hops) > 0 {
