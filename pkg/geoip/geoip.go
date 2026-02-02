@@ -2,8 +2,11 @@ package geoip
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"strings"
 
+	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/oschwald/maxminddb-golang"
 )
@@ -47,11 +50,10 @@ type MaxMindCityRecord struct {
 }
 
 // DBIPCityRecord represents DB-IP City Lite structure
-// DB-IP uses flat string fields instead of nested names maps
 type DBIPCityRecord struct {
 	City        string  `maxminddb:"city"`
-	State1      string  `maxminddb:"state1"`      // Province/State
-	State2      string  `maxminddb:"state2"`      // Sub-region (optional)
+	State1      string  `maxminddb:"state1"`
+	State2      string  `maxminddb:"state2"`
 	CountryCode string  `maxminddb:"country_code"`
 	Latitude    float64 `maxminddb:"latitude"`
 	Longitude   float64 `maxminddb:"longitude"`
@@ -59,18 +61,20 @@ type DBIPCityRecord struct {
 	Timezone    string  `maxminddb:"timezone"`
 }
 
-// Country code to Chinese name mapping for common countries
+// Country code to Chinese name mapping
 var countryCodeToChinese = map[string]string{
 	"CN": "中国", "US": "美国", "JP": "日本", "KR": "韩国",
 	"DE": "德国", "FR": "法国", "GB": "英国", "RU": "俄罗斯",
 	"SG": "新加坡", "HK": "香港", "TW": "台湾", "AU": "澳大利亚",
 	"CA": "加拿大", "NL": "荷兰", "IN": "印度", "BR": "巴西",
+	"CZ": "捷克", "PL": "波兰", "IT": "意大利", "ES": "西班牙",
 }
 
 type Provider struct {
-	cityDB   *maxminddb.Reader // Use maxminddb for better compatibility
-	ispDB    *geoip2.Reader    // Keep geoip2 for ISP (standard MaxMind format)
-	dbType   string            // "maxmind" or "dbip"
+	cityDB      *maxminddb.Reader // DB-IP/MaxMind for non-China IPs
+	ispDB       *geoip2.Reader    // MaxMind ISP database
+	ip2regionDB *xdb.Searcher     // ip2region for China IPs (high precision)
+	dbType      string            // "maxmind" or "dbip"
 }
 
 func NewProvider(cityDBPath, ispDBPath string) (*Provider, error) {
@@ -82,22 +86,19 @@ func NewProvider(cityDBPath, ispDBPath string) (*Provider, error) {
 			return nil, fmt.Errorf("failed to open City DB: %w", err)
 		}
 		p.cityDB = db
-		
+
 		// Detect database type by metadata
 		meta := db.Metadata
 		if meta.DatabaseType == "GeoLite2-City" || meta.DatabaseType == "GeoIP2-City" {
 			p.dbType = "maxmind"
 		} else {
-			// DB-IP and other databases
 			p.dbType = "dbip"
 		}
 	}
 
 	if ispDBPath != "" {
 		db, err := geoip2.Open(ispDBPath)
-		if err != nil {
-			// ISP DB is optional, just log or ignore
-		} else {
+		if err == nil {
 			p.ispDB = db
 		}
 	}
@@ -105,9 +106,38 @@ func NewProvider(cityDBPath, ispDBPath string) (*Provider, error) {
 	return p, nil
 }
 
+// LoadIP2Region loads the ip2region database for high-precision China IP lookup
+func (p *Provider) LoadIP2Region(xdbPath string) error {
+	// Load entire xdb file into memory for best performance
+	cBuff, err := xdb.LoadContentFromFile(xdbPath)
+	if err != nil {
+		return fmt.Errorf("failed to load ip2region xdb: %w", err)
+	}
+
+	// Get version from header
+	header, err := xdb.LoadHeaderFromBuff(cBuff)
+	if err != nil {
+		return fmt.Errorf("failed to load ip2region header: %w", err)
+	}
+
+	version, err := xdb.VersionFromHeader(header)
+	if err != nil {
+		return fmt.Errorf("failed to get ip2region version: %w", err)
+	}
+
+	searcher, err := xdb.NewWithBuffer(version, cBuff)
+	if err != nil {
+		return fmt.Errorf("failed to create ip2region searcher: %w", err)
+	}
+
+	p.ip2regionDB = searcher
+	log.Printf("[GeoIP] ip2region database loaded for high-precision China IP lookup")
+	return nil
+}
+
 // Lookup returns location data with both Chinese and English names
-// The primary fields (City, Subdiv, Country) use Chinese if available, else English
-// The *EN fields always contain English names for API consumers to choose
+// For China IPs, uses ip2region for high precision (city + ISP)
+// For other IPs, uses DB-IP/MaxMind database
 func (p *Provider) Lookup(ipStr string) (*Location, error) {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
@@ -116,45 +146,80 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 
 	loc := &Location{}
 
+	// Try ip2region first for China IPs (higher precision)
+	if p.ip2regionDB != nil {
+		region, err := p.ip2regionDB.SearchByStr(ipStr)
+		if err == nil && region != "" {
+			// ip2region format: 国家|省份|城市|ISP|iso-code
+			// Example: 中国|湖南|湘潭|电信|CN
+			parts := strings.Split(region, "|")
+			if len(parts) >= 4 && parts[0] == "中国" {
+				// This is a China IP with detailed info
+				loc.Country = parts[0]
+				loc.CountryEN = "China"
+				loc.ISOCode = "CN"
+
+				if parts[1] != "0" && parts[1] != "" {
+					loc.Subdiv = parts[1]
+					loc.SubdivEN = parts[1] // Keep Chinese for subdivision
+				}
+
+				if parts[2] != "0" && parts[2] != "" {
+					loc.City = parts[2]
+					loc.CityEN = parts[2] // Keep Chinese for city
+				}
+
+				if parts[3] != "0" && parts[3] != "" {
+					loc.ISP = parts[3]
+				}
+
+				// Set precision
+				if loc.City != "" {
+					loc.Precision = "city"
+				} else if loc.Subdiv != "" {
+					loc.Precision = "subdivision"
+				} else {
+					loc.Precision = "country"
+				}
+
+				return loc, nil
+			}
+		}
+	}
+
+	// Fallback to DB-IP/MaxMind for non-China IPs
 	if p.cityDB != nil {
 		if p.dbType == "dbip" {
-			// DB-IP City Lite format
 			var record DBIPCityRecord
 			err := p.cityDB.Lookup(ip, &record)
 			if err == nil {
-				// DB-IP uses English names directly
 				loc.CityEN = record.City
-				loc.City = record.City // No Chinese in DB-IP
-				
+				loc.City = record.City
+
 				loc.SubdivEN = record.State1
 				loc.Subdiv = record.State1
-				
+
 				loc.ISOCode = record.CountryCode
 				loc.CountryEN = record.CountryCode
-				// Try to get Chinese country name
 				if cn, ok := countryCodeToChinese[record.CountryCode]; ok {
 					loc.Country = cn
 				} else {
 					loc.Country = record.CountryCode
 				}
-				
+
 				loc.Latitude = record.Latitude
 				loc.Longitude = record.Longitude
 			}
 		} else {
-			// MaxMind GeoLite2-City format
 			var record MaxMindCityRecord
 			err := p.cityDB.Lookup(ip, &record)
 			if err == nil {
-				// Get both language versions for each field
-				// City
 				loc.CityEN = record.City.Names["en"]
 				loc.City = record.City.Names["zh-CN"]
 				if loc.City == "" {
-					loc.City = loc.CityEN // Fallback to English
+					loc.City = loc.CityEN
 				}
 
-				// Subdivision (Province/State)
 				if len(record.Subdivisions) > 0 {
 					loc.SubdivEN = record.Subdivisions[0].Names["en"]
 					loc.Subdiv = record.Subdivisions[0].Names["zh-CN"]
@@ -163,7 +228,6 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 					}
 				}
 
-				// Country
 				loc.CountryEN = record.Country.Names["en"]
 				loc.Country = record.Country.Names["zh-CN"]
 				if loc.Country == "" {
@@ -188,7 +252,8 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 		}
 	}
 
-	if p.ispDB != nil {
+	// ISP lookup from MaxMind ISP database (for non-China IPs)
+	if p.ispDB != nil && loc.ISP == "" {
 		record, err := p.ispDB.ISP(ip)
 		if err == nil {
 			loc.ISP = record.Organization
@@ -207,5 +272,8 @@ func (p *Provider) Close() {
 	}
 	if p.ispDB != nil {
 		p.ispDB.Close()
+	}
+	if p.ip2regionDB != nil {
+		p.ip2regionDB.Close()
 	}
 }

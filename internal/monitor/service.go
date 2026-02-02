@@ -573,6 +573,15 @@ func initGeoProvider() *geoip.Provider {
 		return nil
 	}
 	log.Printf("GeoIP enabled: city=%s isp=%s", cityDB, ispDB)
+
+	// Load ip2region for high-precision China IP lookup
+	ip2regionPath := filepath.Join(filepath.Dir(cityDB), "ip2region.xdb")
+	if err := ensureIP2RegionDatabase(ip2regionPath); err != nil {
+		log.Printf("[GeoIP] ip2region download failed: %v", err)
+	} else if err := provider.LoadIP2Region(ip2regionPath); err != nil {
+		log.Printf("[GeoIP] ip2region load failed: %v", err)
+	}
+
 	return provider
 }
 
@@ -607,10 +616,25 @@ func ensureGeoIPDatabase(path string) error {
 			return nil
 		}
 	}
-	// Use DB-IP City Lite database for better China IP accuracy
+	// Use DB-IP City Lite database for non-China IPs
 	// Source: https://github.com/sapics/ip-location-db (updates monthly)
 	log.Printf("[GeoIP] Downloading DB-IP City Lite database...")
 	return downloadGeoIP(path, "https://raw.githubusercontent.com/sapics/ip-location-db/main/dbip-city-mmdb/dbip-city-ipv4.mmdb")
+}
+
+// ensureIP2RegionDatabase ensures the ip2region xdb file exists for China IP lookup
+func ensureIP2RegionDatabase(path string) error {
+	const minSizeBytes = 1 * 1024 * 1024 // ip2region.xdb is about 11MB
+	if info, err := os.Stat(path); err == nil {
+		if info.Size() > minSizeBytes {
+			return nil
+		}
+	}
+	// ip2region provides the most accurate China IP data
+	// Format: 国家|省份|城市|ISP|iso-code (e.g., 中国|湖南|湘潭|电信|CN)
+	// Source: https://github.com/lionsoul2014/ip2region
+	log.Printf("[GeoIP] Downloading ip2region database for China IP precision...")
+	return downloadGeoIP(path, "https://raw.githubusercontent.com/lionsoul2014/ip2region/master/data/ip2region_v4.xdb")
 }
 
 func selectTargetLatency(res *prober.MTRResult, fallback float64) (float64, bool) {
