@@ -1,5 +1,6 @@
 .git
 .github
+!.github/.release-please-manifest.json
 build
 routelens_linux_amd64
 web/node_modules
