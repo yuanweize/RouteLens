@@ -33,9 +33,12 @@ const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [trace, setTrace] = useState<any>(null);
-  const [timeRange, setTimeRange] = useState<number>(6); // hours
+  const [timeRange, setTimeRange] = useState<number>(1); // hours (default 1h)
 
   const timeRangeOptions = [
+    { value: 5/60, label: t('timeRange.5m') || '5 Min' },
+    { value: 15/60, label: t('timeRange.15m') || '15 Min' },
+    { value: 30/60, label: t('timeRange.30m') || '30 Min' },
     { value: 1, label: t('timeRange.1h') || '1 Hour' },
     { value: 6, label: t('timeRange.6h') || '6 Hours' },
     { value: 12, label: t('timeRange.12h') || '12 Hours' },

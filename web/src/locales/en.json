@@ -51,6 +51,9 @@
     "lastTest": "Last"
   },
   "timeRange": {
+    "5m": "5 Min",
+    "15m": "15 Min",
+    "30m": "30 Min",
     "1h": "1 Hour",
     "6h": "6 Hours",
     "12h": "12 Hours",
