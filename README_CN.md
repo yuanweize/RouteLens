@@ -69,9 +69,10 @@ docker compose up -d
 从 [Releases](https://github.com/yuanweize/RouteLens/releases/latest) 下载：
 
 ```bash
-# Linux
-curl -LO https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_2.0.0_linux_amd64.tar.gz
-tar xzf routelens_2.0.0_linux_amd64.tar.gz
+# Linux（将 VERSION 替换为实际版本号，如 2.2.2）
+VERSION=$(curl -s https://api.github.com/repos/yuanweize/RouteLens/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d 'v')
+curl -LO "https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_${VERSION}_linux_amd64.tar.gz"
+tar xzf routelens_${VERSION}_linux_amd64.tar.gz
 chmod +x routelens
 
 # 直接运行
@@ -121,7 +122,7 @@ RouteLens 支持从 Web UI 一键升级：
 
 ## 🔐 安全特性
 
-RouteLens v2.0.0 包含全面安全加固：
+RouteLens 包含全面安全加固：
 
 - **JWT 认证**：密码学安全的随机密钥
 - **登录速率限制**：每 IP 每分钟 5 次

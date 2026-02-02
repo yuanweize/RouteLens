@@ -69,9 +69,10 @@ docker compose up -d
 Download from [Releases](https://github.com/yuanweize/RouteLens/releases/latest):
 
 ```bash
-# Linux
-curl -LO https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_2.0.0_linux_amd64.tar.gz
-tar xzf routelens_2.0.0_linux_amd64.tar.gz
+# Linux (replace VERSION with actual version, e.g., 2.2.2)
+VERSION=$(curl -s https://api.github.com/repos/yuanweize/RouteLens/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d 'v')
+curl -LO "https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_${VERSION}_linux_amd64.tar.gz"
+tar xzf routelens_${VERSION}_linux_amd64.tar.gz
 chmod +x routelens
 
 # Run directly
@@ -208,7 +209,7 @@ make version
 
 ## �🔐 Security
 
-RouteLens v2.0.0 includes comprehensive security hardening:
+RouteLens includes comprehensive security hardening:
 
 - **JWT Authentication** with cryptographically random secrets
 - **Login Rate Limiting** (5 attempts per IP per minute)
