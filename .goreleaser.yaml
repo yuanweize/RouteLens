@@ -138,26 +138,23 @@ release:
     
     ### 🚀 Quick Start
     
-    **Option 1: Docker (Recommended)**
-    ```bash
-    docker run -d --name routelens \
-      --cap-add NET_RAW --cap-add NET_ADMIN \
-      -p 8080:8080 -v $(pwd)/data:/data \
-      -e RS_JWT_SECRET=$(openssl rand -hex 32) \
-      ghcr.io/yuanweize/routelens:{{ .Tag }}
-    ```
-    
-    **Option 2: Binary + Systemd**
+    **Option 1: Binary (Recommended)**
     ```bash
     # Download and extract
     curl -LO https://github.com/yuanweize/RouteLens/releases/download/{{ .Tag }}/routelens_{{ .Version }}_linux_amd64.tar.gz
     tar xzf routelens_{{ .Version }}_linux_amd64.tar.gz
     
-    # Install as systemd service
+    # Install as systemd service (one command!)
     sudo ./routelens service install --port 8080
     ```
     
-    **Option 3: DEB/RPM Package**
+    **Option 2: Docker Compose**
+    ```bash
+    curl -O https://raw.githubusercontent.com/yuanweize/RouteLens/master/compose.yml
+    docker compose up -d
+    ```
+    
+    **Option 3: System Package**
     ```bash
     # Debian/Ubuntu
     sudo dpkg -i routelens_{{ .Version }}_linux_amd64.deb
@@ -166,17 +163,16 @@ release:
     sudo rpm -i routelens_{{ .Version }}_linux_amd64.rpm
     ```
     
-    ### ⚙️ Post-Install
+    ### ⚙️ First Run
     
     1. Open `http://your-server:8080`
-    2. Complete the setup wizard to create admin account
-    3. Add monitoring targets in the dashboard
+    2. Create admin account on setup page
+    3. Add monitoring targets
     
-    > ⚠️ **Production**: Set `RS_JWT_SECRET` environment variable for persistent sessions.
+    > ⚠️ **Production**: Set `RS_JWT_SECRET` env var for persistent sessions.
   footer: |
     ---
-    📖 **Documentation**: https://github.com/yuanweize/RouteLens#readme
-    🐳 **Docker Hub**: `ghcr.io/yuanweize/routelens:{{ .Tag }}`
+    📖 [Documentation](https://github.com/yuanweize/RouteLens#readme) · 🐳 `ghcr.io/yuanweize/routelens:{{ .Tag }}`
 
 # Announce (optional - can be enabled later)
 # announce:
