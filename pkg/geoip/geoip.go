@@ -1,15 +1,74 @@
 package geoip
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/oschwald/maxminddb-golang"
 )
+
+// Embed China city coordinates data (from AreaCity-JsSpider-StatsGov)
+// Source: https://github.com/xiangyuecn/AreaCity-JsSpider-StatsGov
+//
+//go:embed china_cities_geo.json
+var chinaCitiesGeoJSON []byte
+
+// chinaCityCoords stores city name -> [lat, lng]
+var chinaCityCoords map[string][2]float64
+var chinaCityCoordsOnce sync.Once
+
+// loadChinaCityCoords loads the embedded China city coordinates
+func loadChinaCityCoords() {
+	chinaCityCoordsOnce.Do(func() {
+		chinaCityCoords = make(map[string][2]float64)
+		if err := json.Unmarshal(chinaCitiesGeoJSON, &chinaCityCoords); err != nil {
+			log.Printf("[GeoIP] Warning: failed to load China city coordinates: %v", err)
+			return
+		}
+		log.Printf("[GeoIP] Loaded %d China city coordinates", len(chinaCityCoords))
+	})
+}
+
+// lookupChinaCityCoords looks up coordinates for a Chinese city
+// Returns lat, lng, found
+func lookupChinaCityCoords(city, subdiv string) (float64, float64, bool) {
+	loadChinaCityCoords()
+	if chinaCityCoords == nil {
+		return 0, 0, false
+	}
+
+	// Try exact city name first (e.g., "湘潭")
+	if city != "" {
+		// Try with "市" suffix
+		if coords, ok := chinaCityCoords[city+"市"]; ok {
+			return coords[0], coords[1], true
+		}
+		// Try exact match
+		if coords, ok := chinaCityCoords[city]; ok {
+			return coords[0], coords[1], true
+		}
+	}
+
+	// Fallback to subdivision (province) center
+	if subdiv != "" {
+		// Try with "省" suffix
+		if coords, ok := chinaCityCoords[subdiv+"省"]; ok {
+			return coords[0], coords[1], true
+		}
+		if coords, ok := chinaCityCoords[subdiv]; ok {
+			return coords[0], coords[1], true
+		}
+	}
+
+	return 0, 0, false
+}
 
 // Supported language codes
 const (
@@ -180,6 +239,12 @@ func (p *Provider) Lookup(ipStr string) (*Location, error) {
 					loc.Precision = "subdivision"
 				} else {
 					loc.Precision = "country"
+				}
+
+				// Lookup coordinates for China city
+				if lat, lng, ok := lookupChinaCityCoords(loc.City, loc.Subdiv); ok {
+					loc.Latitude = lat
+					loc.Longitude = lng
 				}
 
 				return loc, nil

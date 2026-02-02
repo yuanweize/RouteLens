@@ -33,9 +33,10 @@
 | 🔄 **Auto-Update** | One-click in-app upgrade mechanism (AdGuard Home style) |
 | 🔐 **Secure by Default** | JWT authentication, login rate limiting (5/min), input sanitization |
 | 🎨 **Modern UI** | React 19 + Ant Design v5 with automatic dark mode |
-| 🌍 **Auto GeoIP** | Automatic GeoIP database download and hop enrichment |
+| 🌍 **Precision GeoIP** | Dual database (DB-IP/MaxMind + ip2region) with 3000+ China city coordinates |
 | 📊 **Historical Metrics** | Time-series charts for latency, packet loss, and bandwidth trends |
 | 📦 **Single Binary** | Zero dependencies, one-file deployment with systemd support |
+| 🗺️ **Smart Map** | Auto-zoom to fit route, bilingual (中/EN) location names |
 | 🎯 **Target Control** | Enable/disable monitoring targets without deletion |
 
 ---

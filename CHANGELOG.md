@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.0](https://github.com/yuanweize/RouteLens/compare/v2.0.0...v2.1.0) (2025-01)
+
+
+### Features
+
+* **geoip:** Integrated ip2region for high-precision China IP lookup (city-level + ISP)
+* **geoip:** Embedded 3149 China city coordinates from government data source
+* **map:** Auto-zoom to fit all route points on the map
+* **map:** Dynamic zoom calculation based on geographic bounding box
+* **i18n:** Localized location names on map (Chinese/English based on UI language)
+* **i18n:** Localized tooltip labels (Hop/跳数, Latency/延迟, Precision/精度)
+
+
+### Bug Fixes
+
+* **map:** Fixed missing coordinates for China IPs causing broken map visualization
+* **map:** Fixed map default zoom too small to see route details
+* **i18n:** Fixed mixed Chinese/English location names when switching language
+
+
+---
+
 ## [2.0.0](https://github.com/yuanweize/RouteLens/compare/v1.3.2...v2.0.0) (2026-02-02)
 
 

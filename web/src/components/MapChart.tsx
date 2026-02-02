@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 interface MapChartProps {
   trace?: any;
@@ -10,6 +11,7 @@ interface MapChartProps {
 
 const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
   const [ready, setReady] = useState(false);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     const fetchMap = async () => {
@@ -32,6 +34,18 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
     return trace;
   }, [trace]);
 
+  // Helper function to get localized location name
+  const getLocalizedName = (h: any) => {
+    const lang = i18n.language;
+    if (lang === 'zh-CN' || lang === 'zh') {
+      // Chinese: prefer zh fields
+      return h.city || h.subdiv || h.host || h.ip;
+    } else {
+      // English: prefer *_en fields
+      return h.city_en || h.subdiv_en || h.city || h.subdiv || h.host || h.ip;
+    }
+  };
+
   // High-Precision Mode: Filter out low-precision nodes (country-level only)
   // Only include nodes with city or subdivision precision for accurate map lines
   const highPrecisionPoints = useMemo(() => {
@@ -46,12 +60,12 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
         return true;
       })
       .map((h: any) => ({
-        name: h.city || h.subdiv || h.host || h.ip,
+        name: getLocalizedName(h),
         value: [h.lon, h.lat],
         latency: h.latency_last_ms || h.latency_avg_ms || h.latency_ms || 0,
         hop: h.hop,
       }));
-  }, [traceData]);
+  }, [traceData, i18n.language]);
 
   // All points for scatter display (including low-precision)
   const allPoints = useMemo(() => {
@@ -59,13 +73,42 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
     return hops
       .filter((h: any) => Number.isFinite(h.lon) && Number.isFinite(h.lat) && (h.lon !== 0 || h.lat !== 0))
       .map((h: any) => ({
-        name: h.city || h.subdiv || h.host || h.ip,
+        name: getLocalizedName(h),
         value: [h.lon, h.lat],
         latency: h.latency_last_ms || h.latency_avg_ms || h.latency_ms || 0,
         hop: h.hop,
         precision: h.geo_precision || (h.city ? 'city' : h.subdiv ? 'subdivision' : 'country'),
       }));
-  }, [traceData]);
+  }, [traceData, i18n.language]);
+
+  // Calculate bounding box for auto-zoom
+  const boundingBox = useMemo(() => {
+    if (allPoints.length === 0) return null;
+    
+    let minLon = Infinity, maxLon = -Infinity;
+    let minLat = Infinity, maxLat = -Infinity;
+    
+    allPoints.forEach((p: any) => {
+      const [lon, lat] = p.value;
+      minLon = Math.min(minLon, lon);
+      maxLon = Math.max(maxLon, lon);
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+    });
+    
+    // Add padding (10% on each side)
+    const lonPadding = (maxLon - minLon) * 0.15 || 10;
+    const latPadding = (maxLat - minLat) * 0.15 || 10;
+    
+    return {
+      minLon: minLon - lonPadding,
+      maxLon: maxLon + lonPadding,
+      minLat: minLat - latPadding,
+      maxLat: maxLat + latPadding,
+      centerLon: (minLon + maxLon) / 2,
+      centerLat: (minLat + maxLat) / 2,
+    };
+  }, [allPoints]);
 
   const colorForLatency = (latency: number) => {
     if (latency > 200) return '#ff4d4f';
@@ -88,67 +131,99 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
     return segs;
   }, [highPrecisionPoints, traceData]);
 
-  const option = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'item',
-      formatter: (params: any) => {
-        if (params.seriesType === 'effectScatter') {
-          const latency = params.data?.latency ?? 0;
-          const precision = params.data?.precision || '';
-          const precisionLabel = precision === 'city' ? '🎯 City' : precision === 'subdivision' ? '📍 Province' : '🌐 Country';
-          return `<b>${params.name}</b><br/>Hop: ${params.data?.hop || '-'}<br/>Latency: ${latency.toFixed(1)}ms<br/>Precision: ${precisionLabel}`;
-        }
-        return params.name;
-      },
-    },
-    geo: {
-      map: 'world',
-      roam: true,
-      itemStyle: {
-        areaColor: isDark ? '#1f1f1f' : '#f0f5ff',
-        borderColor: isDark ? '#2f2f2f' : '#d6e4ff',
-      },
-      emphasis: {
-        itemStyle: { areaColor: isDark ? '#2a2a2a' : '#d6e4ff' },
-      },
-    },
-    series: [
-      {
-        type: 'lines',
-        coordinateSystem: 'geo',
-        polyline: true,
-        zlevel: 1,
-        effect: { show: true, period: 4, trailLength: 0.7, color: '#fff', symbolSize: 3 },
-        lineStyle: { width: 0, curveness: 0.2 },
-        data: segments,
-      },
-      {
-        type: 'lines',
-        coordinateSystem: 'geo',
-        polyline: true,
-        zlevel: 2,
-        symbol: ['none', 'arrow'],
-        symbolSize: 10,
-        lineStyle: { width: 2, opacity: 0.7, curveness: 0.2 },
-        data: segments,
-      },
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        zlevel: 3,
-        rippleEffect: { brushType: 'stroke' },
-        label: {
-          show: true,
-          position: 'right',
-          formatter: (params: any) => (params.data?.precision === 'country' ? '' : params.name),
+  // Calculate zoom level based on bounding box
+  const calculateZoom = useMemo(() => {
+    if (!boundingBox) return 1.2;
+    const lonRange = boundingBox.maxLon - boundingBox.minLon;
+    const latRange = boundingBox.maxLat - boundingBox.minLat;
+    const maxRange = Math.max(lonRange, latRange);
+    
+    // Approximate zoom level based on range
+    if (maxRange > 150) return 1;
+    if (maxRange > 100) return 1.5;
+    if (maxRange > 60) return 2;
+    if (maxRange > 30) return 3;
+    if (maxRange > 15) return 4;
+    if (maxRange > 8) return 5;
+    if (maxRange > 4) return 6;
+    return 7;
+  }, [boundingBox]);
+
+  const option = useMemo(() => {
+    const isZh = i18n.language === 'zh-CN' || i18n.language === 'zh';
+    const precisionLabels = {
+      city: isZh ? '🎯 城市' : '🎯 City',
+      subdivision: isZh ? '📍 省份' : '📍 Province',
+      country: isZh ? '🌐 国家' : '🌐 Country',
+    };
+    
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: any) => {
+          if (params.seriesType === 'effectScatter') {
+            const latency = params.data?.latency ?? 0;
+            const precision = params.data?.precision || '';
+            const precisionLabel = precisionLabels[precision as keyof typeof precisionLabels] || precisionLabels.country;
+            const hopLabel = isZh ? '跳数' : 'Hop';
+            const latencyLabel = isZh ? '延迟' : 'Latency';
+            const precisionText = isZh ? '精度' : 'Precision';
+            return `<b>${params.name}</b><br/>${hopLabel}: ${params.data?.hop || '-'}<br/>${latencyLabel}: ${latency.toFixed(1)}ms<br/>${precisionText}: ${precisionLabel}`;
+          }
+          return params.name;
         },
-        symbolSize: (_val: any, params: any) => (params.data?.precision === 'country' ? 6 : 10),
-        itemStyle: { color: (params: any) => (params.data?.precision === 'country' ? '#666' : '#1677ff') },
-        data: allPoints,
       },
-    ],
-  };
+      geo: {
+        map: 'world',
+        roam: true,
+        center: boundingBox ? [boundingBox.centerLon, boundingBox.centerLat] : undefined,
+        zoom: calculateZoom,
+        itemStyle: {
+          areaColor: isDark ? '#1f1f1f' : '#f0f5ff',
+          borderColor: isDark ? '#2f2f2f' : '#d6e4ff',
+        },
+        emphasis: {
+          itemStyle: { areaColor: isDark ? '#2a2a2a' : '#d6e4ff' },
+        },
+      },
+      series: [
+        {
+          type: 'lines',
+          coordinateSystem: 'geo',
+          polyline: true,
+          zlevel: 1,
+          effect: { show: true, period: 4, trailLength: 0.7, color: '#fff', symbolSize: 3 },
+          lineStyle: { width: 0, curveness: 0.2 },
+          data: segments,
+        },
+        {
+          type: 'lines',
+          coordinateSystem: 'geo',
+          polyline: true,
+          zlevel: 2,
+          symbol: ['none', 'arrow'],
+          symbolSize: 10,
+          lineStyle: { width: 2, opacity: 0.7, curveness: 0.2 },
+          data: segments,
+        },
+        {
+          type: 'effectScatter',
+          coordinateSystem: 'geo',
+          zlevel: 3,
+          rippleEffect: { brushType: 'stroke' },
+          label: {
+            show: true,
+            position: 'right',
+            formatter: (params: any) => (params.data?.precision === 'country' ? '' : params.name),
+          },
+          symbolSize: (_val: any, params: any) => (params.data?.precision === 'country' ? 6 : 10),
+          itemStyle: { color: (params: any) => (params.data?.precision === 'country' ? '#666' : '#1677ff') },
+          data: allPoints,
+        },
+      ],
+    };
+  }, [boundingBox, calculateZoom, isDark, segments, allPoints, i18n.language]);
 
   return (
     <div className="map-container">
