@@ -148,13 +148,3 @@ RouteLens v1.3.1 包含安全加固：
 ## 📝 许可证
 
 [MIT License](LICENSE) — 可自由用于个人和商业用途。
-
----
-
-<div align="center">
-
-**[⬆ 返回顶部](#)**
-
-为网络工程师用 ❤️ 打造
-
-</div>

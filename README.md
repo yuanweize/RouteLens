@@ -184,13 +184,3 @@ RouteLens v1.3.1 includes security hardening:
 ## 📝 License
 
 [MIT License](LICENSE) — Free for personal and commercial use.
-
----
-
-<div align="center">
-
-**[⬆ Back to Top](#)**
-
-Made with ❤️ for network engineers
-
-</div>
