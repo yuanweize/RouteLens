@@ -22,6 +22,9 @@ var (
 	targetPattern = regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z]{2,}$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$|^[a-fA-F0-9:]+$`)
 )
 
+// Rate limiter for login attempts: 5 attempts per IP per minute
+var loginRateLimiter = NewRateLimiter(5, time.Minute)
+
 type Server struct {
 	router  *gin.Engine
 	db      *storage.DB
@@ -122,7 +125,8 @@ func (s *Server) setupRoutes() {
 	// Public API
 	s.router.GET("/api/v1/need-setup", s.handleNeedSetup)
 	s.router.POST("/api/v1/setup", s.handleSetup)
-	s.router.POST("/login", s.handleLogin)
+	// Login with rate limiting: 5 attempts per IP per minute
+	s.router.POST("/login", LoginRateLimitMiddleware(loginRateLimiter), s.handleLogin)
 	s.router.GET("/api/v1/system/info", s.handleSystemInfo) // Public: version info is not sensitive
 
 	// Protected API

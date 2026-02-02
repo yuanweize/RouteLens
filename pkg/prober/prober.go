@@ -1,6 +1,9 @@
 package prober
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -13,6 +16,29 @@ const (
 	MetricBandwidth  MetricType = "bandwidth"
 	MetricTraceroute MetricType = "traceroute"
 )
+
+// targetPattern validates hostnames and IP addresses
+// Allows: domain names, IPv4, IPv6
+var targetPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-\.]*[a-zA-Z0-9])?$|^(\d{1,3}\.){3}\d{1,3}$|^([a-fA-F0-9:]+)$`)
+
+// ValidateTarget performs security validation on probe targets
+// Returns error if the target contains potentially dangerous characters
+func ValidateTarget(target string) error {
+	if target == "" {
+		return fmt.Errorf("target cannot be empty")
+	}
+	if len(target) > 253 {
+		return fmt.Errorf("target too long (max 253 characters)")
+	}
+	// Block shell metacharacters to prevent command injection
+	if strings.ContainsAny(target, ";|&$`\"'<>(){}[]\\!#*?~") {
+		return fmt.Errorf("target contains invalid characters")
+	}
+	if !targetPattern.MatchString(target) {
+		return fmt.Errorf("target format invalid: must be hostname or IP address")
+	}
+	return nil
+}
 
 // SpeedResult holds the result of a bandwidth test
 type SpeedResult struct {

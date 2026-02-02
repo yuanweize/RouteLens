@@ -52,11 +52,17 @@ func NewMTRRunner(target string) *MTRRunner {
 }
 
 func (r *MTRRunner) Run() (*MTRResult, error) {
+	// SECURITY: Validate target before passing to exec.Command
+	if err := ValidateTarget(r.Target); err != nil {
+		return nil, fmt.Errorf("invalid target: %w", err)
+	}
+
 	count := r.Count
 	if count <= 0 {
 		count = 10
 	}
 
+	// SECURITY: Using argument separation (not shell string concatenation)
 	cmd := exec.Command("mtr", "--json", "-c", fmt.Sprintf("%d", count), r.Target)
 	output, err := cmd.Output()
 	if err != nil {

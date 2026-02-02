@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,16 +11,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/yuanweize/RouteLens/pkg/logging"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var secretKey []byte
 
 func init() {
-	// Load secret from env or generate random default
+	// Load secret from env or generate cryptographically secure random secret
 	sk := os.Getenv("RS_JWT_SECRET")
 	if sk == "" {
-		sk = "routescope-default-secret-change-me-in-prod"
+		// SECURITY: Generate random 32-byte secret instead of hardcoded fallback
+		// Note: This means all tokens will be invalidated on server restart
+		randomBytes := make([]byte, 32)
+		if _, err := rand.Read(randomBytes); err != nil {
+			// This should never happen, but panic if crypto/rand fails
+			panic(fmt.Sprintf("CRITICAL: Failed to generate random JWT secret: %v", err))
+		}
+		sk = hex.EncodeToString(randomBytes)
+		logging.Warn("auth", "RS_JWT_SECRET not set - using random secret (tokens will expire on restart)")
 	}
 	secretKey = []byte(sk)
 }
