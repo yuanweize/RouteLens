@@ -34,6 +34,15 @@ const Dashboard: React.FC = () => {
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [trace, setTrace] = useState<any>(null);
   const [timeRange, setTimeRange] = useState<number>(1); // hours (default 1h)
+  const [countdown, setCountdown] = useState<number>(0);
+
+  // Calculate polling interval based on time range (shorter range = faster refresh)
+  const pollingInterval = useMemo(() => {
+    if (timeRange <= 0.5) return 10000;   // 5m-30m: refresh every 10s
+    if (timeRange <= 1) return 15000;     // 1h: refresh every 15s
+    if (timeRange <= 6) return 20000;     // 6h: refresh every 20s
+    return 30000;                          // 12h+: refresh every 30s
+  }, [timeRange]);
 
   const timeRangeOptions = [
     { value: 5/60, label: t('timeRange.5m') || '5 Min' },
@@ -61,6 +70,15 @@ const Dashboard: React.FC = () => {
     }
   }, [targets, selectedTarget]);
 
+  // Countdown timer for refresh indicator
+  useEffect(() => {
+    setCountdown(pollingInterval / 1000);
+    const interval = setInterval(() => {
+      setCountdown((prev) => (prev <= 1 ? pollingInterval / 1000 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [pollingInterval, selectedTarget, timeRange]);
+
   const { data: history = [] } = useRequest(
     () => {
       const end = new Date();
@@ -74,7 +92,8 @@ const Dashboard: React.FC = () => {
     {
       refreshDeps: [selectedTarget, timeRange],
       ready: !!selectedTarget,
-      pollingInterval: 30000, // refresh every 30s
+      pollingInterval,
+      onSuccess: () => setCountdown(pollingInterval / 1000),
     }
   );
 
@@ -84,6 +103,7 @@ const Dashboard: React.FC = () => {
     {
       refreshDeps: [selectedTarget, i18n.language],
       ready: !!selectedTarget,
+      pollingInterval, // also auto-refresh trace
       onSuccess: (data) => setTrace(data),
     }
   );
@@ -350,13 +370,32 @@ const Dashboard: React.FC = () => {
             className="chart-card" 
             title={t('dashboard.historicalMetrics')}
             extra={
-              <Select
-                size="small"
-                style={{ width: 100 }}
-                value={timeRange}
-                onChange={setTimeRange}
-                options={timeRangeOptions}
-              />
+              <Space>
+                <Tooltip title={t('dashboard.autoRefresh') || 'Auto-refresh'}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: 'rgba(24, 144, 255, 0.1)',
+                    color: '#1890ff',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    animation: countdown <= 3 ? 'pulse 1s infinite' : 'none',
+                  }}>
+                    {countdown}
+                  </span>
+                </Tooltip>
+                <Select
+                  size="small"
+                  style={{ width: 100 }}
+                  value={timeRange}
+                  onChange={setTimeRange}
+                  options={timeRangeOptions}
+                />
+              </Space>
             }
           >
             <MetricsChart history={history} isDark={isDark} />

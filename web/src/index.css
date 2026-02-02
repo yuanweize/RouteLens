@@ -88,3 +88,9 @@ html {
 .ant-select-dropdown {
   background-color: #1f1f1f !important;
 }
+
+/* Pulse animation for countdown */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}

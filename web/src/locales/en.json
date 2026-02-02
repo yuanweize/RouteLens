@@ -48,6 +48,7 @@
     "historicalMetrics": "Historical Metrics",
     "selectTarget": "Select Target",
     "probeNow": "Probe Now",
+    "autoRefresh": "Auto-refresh countdown",
     "lastTest": "Last"
   },
   "timeRange": {

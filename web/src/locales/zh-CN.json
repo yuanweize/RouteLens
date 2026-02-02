@@ -48,6 +48,7 @@
     "historicalMetrics": "历史数据",
     "selectTarget": "选择目标",
     "probeNow": "立即探测",
+    "autoRefresh": "自动刷新倒计时",
     "lastTest": "最近测速"
   },
   "timeRange": {

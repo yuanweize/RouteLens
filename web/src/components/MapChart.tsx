@@ -131,23 +131,23 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
     return segs;
   }, [highPrecisionPoints, traceData]);
 
-  // Calculate zoom level based on bounding box
-  const calculateZoom = useMemo(() => {
-    if (!boundingBox) return 1.2;
-    const lonRange = boundingBox.maxLon - boundingBox.minLon;
-    const latRange = boundingBox.maxLat - boundingBox.minLat;
-    const maxRange = Math.max(lonRange, latRange);
+  // Calculate zoom level based on bounding box span
+  const zoomLevel = useMemo(() => {
+    if (!boundingBox || allPoints.length < 2) return 1.2;
+    const lonSpan = boundingBox.maxLon - boundingBox.minLon;
+    const latSpan = boundingBox.maxLat - boundingBox.minLat;
+    const maxSpan = Math.max(lonSpan, latSpan);
     
-    // Approximate zoom level based on range
-    if (maxRange > 150) return 1;
-    if (maxRange > 100) return 1.5;
-    if (maxRange > 60) return 2;
-    if (maxRange > 30) return 3;
-    if (maxRange > 15) return 4;
-    if (maxRange > 8) return 5;
-    if (maxRange > 4) return 6;
+    // Zoom level mapping based on geographic span
+    if (maxSpan > 150) return 1;
+    if (maxSpan > 100) return 1.3;
+    if (maxSpan > 60) return 1.8;
+    if (maxSpan > 30) return 2.5;
+    if (maxSpan > 15) return 3.5;
+    if (maxSpan > 8) return 5;
+    if (maxSpan > 4) return 6;
     return 7;
-  }, [boundingBox]);
+  }, [boundingBox, allPoints.length]);
 
   const option = useMemo(() => {
     const isZh = i18n.language === 'zh-CN' || i18n.language === 'zh';
@@ -177,8 +177,8 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
       geo: {
         map: 'world',
         roam: true,
-        center: boundingBox ? [boundingBox.centerLon, boundingBox.centerLat] : undefined,
-        zoom: calculateZoom,
+        center: boundingBox ? [boundingBox.centerLon, boundingBox.centerLat] : [0, 20],
+        zoom: zoomLevel,
         itemStyle: {
           areaColor: isDark ? '#1f1f1f' : '#f0f5ff',
           borderColor: isDark ? '#2f2f2f' : '#d6e4ff',
@@ -223,7 +223,7 @@ const MapChart: React.FC<MapChartProps> = ({ trace, isDark }) => {
         },
       ],
     };
-  }, [boundingBox, calculateZoom, isDark, segments, allPoints, i18n.language]);
+  }, [boundingBox, zoomLevel, isDark, segments, allPoints, i18n.language]);
 
   return (
     <div className="map-container">
