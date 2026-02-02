@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.4](https://github.com/yuanweize/RouteLens/compare/v2.2.3...v2.2.4) (2026-02-02)
+
+
+### Bug Fixes
+
+* validate update download before reporting success ([06b24e9](https://github.com/yuanweize/RouteLens/commit/06b24e9e3fc542ab974f88a208dfc5a205e7a60d))
+
 ## [2.2.3](https://github.com/yuanweize/RouteLens/compare/v2.2.2...v2.2.3) (2026-02-02)
 
 
