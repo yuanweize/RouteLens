@@ -69,7 +69,7 @@ docker compose up -d
 Download from [Releases](https://github.com/yuanweize/RouteLens/releases/latest):
 
 ```bash
-# Linux (replace VERSION with actual version, e.g., 2.2.2)
+# Linux
 VERSION=$(curl -s https://api.github.com/repos/yuanweize/RouteLens/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d 'v')
 curl -LO "https://github.com/yuanweize/RouteLens/releases/latest/download/routelens_${VERSION}_linux_amd64.tar.gz"
 tar xzf routelens_${VERSION}_linux_amd64.tar.gz
