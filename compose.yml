@@ -11,35 +11,36 @@ services:
   routelens:
     image: ghcr.io/yuanweize/routelens:latest
     container_name: routelens
-    
+    # Run as root to avoid permission issues with bind mounts
+    user: root
+
     # Network mode: host recommended for accurate MTR/Ping TTL control
     # If using bridge mode, uncomment ports section below
     network_mode: host
-    
+
     # Required capabilities for raw socket operations (ping/traceroute)
     cap_add:
       - NET_RAW
       - NET_ADMIN
-    
+
     volumes:
       # Persistent data: SQLite database and GeoIP files
       - ./data:/data
-    
-    environment:
+      # environment:
       # ⚠️ SECURITY: Set this in production! Uncomment and change the value.
       # If not set, a random secret is generated (sessions lost on restart)
       # RS_JWT_SECRET: your-super-secure-random-string-at-least-32-chars
-      
+
       # Optional: Probe interval in seconds (default: 30)
       # RS_PROBE_INTERVAL: 60
-      
+
       # Optional: Log level (debug/info/warn/error)
       # RS_LOG_LEVEL: info
-    
-    # Uncomment if using bridge mode instead of host mode
-    # ports:
-    #   - "8080:8080"
-    
+
+      # Uncomment if using bridge mode instead of host mode
+      # ports:
+      #   - "8080:8080"
+
     restart: unless-stopped
 
 # Alternative: Bridge network mode (less accurate but more isolated)

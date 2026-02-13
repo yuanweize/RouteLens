@@ -59,12 +59,32 @@ docker run -d \
 
 ### Option 2: Docker Compose
 
+**Prerequisites:**
+- Docker & Docker Compose installed
+
 ```bash
+# 1. Download configuration
 curl -O https://raw.githubusercontent.com/yuanweize/RouteLens/master/compose.yml
+
+# 2. (Optional) Edit compose.yml to set environment variables like JWT secret
+
+# 3. Start service
 docker compose up -d
+
+# 4. Visit http://localhost:8080
 ```
 
 ### Option 3: Binary
+
+**Prerequisites:**
+- **Linux/macOS**: Requires `mtr` (for route tracing) and `ping`.
+  - Ubuntu/Debian: `sudo apt install mtr`
+  - CentOS/RHEL: `sudo yum install mtr`
+  - macOS: `brew install mtr` (requires running with sudo)
+- **Windows**:
+  - Requires `mtr` binary in system PATH (e.g. from WinMTR or similar, though Windows support is experimental).
+  - Must run terminal as **Administrator**.
+  - *Recommendation: Use WSL or Docker on Windows.*
 
 Download from [Releases](https://github.com/yuanweize/RouteLens/releases/latest):
 

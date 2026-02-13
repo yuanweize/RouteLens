@@ -59,12 +59,31 @@ docker run -d \
 
 ### 方式二：Docker Compose
 
+**Prerequisites (前置要求):**
+- Docker & Docker Compose installed
+
 ```bash
+# 1. 下载配置文件
 curl -O https://raw.githubusercontent.com/yuanweize/RouteLens/master/compose.yml
+
+# 2. (可选) 修改 compose.yml 中的环境变量，如设置 JWT 密钥
+
+# 3. 启动服务
 docker compose up -d
+
+# 4. 访问 http://ip:8080
 ```
 
 ### 方式三：二进制部署
+
+**Prerequisites (前置要求):**
+- **Linux/macOS**: 需要安装 `mtr` (路由追踪) 和 `ping` (通常自带)。
+  - Ubuntu/Debian: `sudo apt install mtr`
+  - CentOS/RHEL: `sudo yum install mtr`
+  - macOS: `brew install mtr` (需要 sudo 运行)
+- **Windows**:
+  - 需要下载 [WinMTR](https://sourceforge.net/projects/winmtr/) 或类似工具并将 `mtr.exe` 放入系统 PATH 中（目前 Windows 支持尚不完善，建议使用 WSL 或 Docker）。
+  - 需要以 **管理员身份** 运行终端。
 
 从 [Releases](https://github.com/yuanweize/RouteLens/releases/latest) 下载：
 

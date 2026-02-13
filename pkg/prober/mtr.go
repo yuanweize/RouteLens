@@ -57,6 +57,11 @@ func (r *MTRRunner) Run() (*MTRResult, error) {
 		return nil, fmt.Errorf("invalid target: %w", err)
 	}
 
+	// Check if mtr is available
+	if _, err := exec.LookPath("mtr"); err != nil {
+		return nil, fmt.Errorf("mtr binary not found in PATH: %w (please install mtr)", err)
+	}
+
 	count := r.Count
 	if count <= 0 {
 		count = 10
