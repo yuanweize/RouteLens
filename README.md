@@ -28,24 +28,24 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---------|-------------|
-| 🛰️ **Agentless Monitoring** | Ping, MTR traceroute, and SSH-based bandwidth testing — no agents required on targets |
-| 🔄 **Auto-Update** | One-click in-app upgrade mechanism (AdGuard Home style) |
-| 🔐 **Secure by Default** | JWT authentication, login rate limiting (5/min), input sanitization |
-| 🎨 **Modern UI** | React 19 + Ant Design v5 with automatic dark mode |
-| 🌍 **Precision GeoIP** | CLDR country names + ip2region for China with 3000+ city coordinates |
-| 📊 **Historical Metrics** | Time-series charts for latency, packet loss, and bandwidth trends |
-| 📦 **Single Binary** | Zero dependencies, one-file deployment with systemd support |
-| 🗺️ **Smart Map** | Auto-zoom to fit route, auto-refresh with countdown indicator |
-| 🎯 **Target Control** | Enable/disable monitoring targets without deletion |
-| 🌐 **i18n Ready** | Full Chinese/English support with proper localized place names |
+| **Agentless Monitoring** | Ping, MTR traceroute, and SSH-based bandwidth testing — no agents required on targets |
+| **Auto-Update** | One-click in-app upgrade mechanism (AdGuard Home style) |
+| **Secure by Default** | JWT authentication, login rate limiting (5/min), input sanitization |
+| **Modern UI** | React 19 + Ant Design v5 with automatic dark mode |
+| **Precision GeoIP** | CLDR country names + ip2region for China with 3000+ city coordinates |
+| **Historical Metrics** | Time-series charts for latency, packet loss, and bandwidth trends |
+| **Single Binary** | Zero dependencies, one-file deployment with systemd support |
+| **Smart Map** | Auto-zoom to fit route, auto-refresh with countdown indicator |
+| **Target Control** | Enable/disable monitoring targets without deletion |
+| **i18n Ready** | Full Chinese/English support with proper localized place names |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option 1: Docker (Recommended)
 
@@ -107,7 +107,7 @@ chmod +x routelens
 
 ---
 
-## 🔧 Initial Setup
+## Initial Setup
 
 1. Open `http://your-server:8080`
 2. You'll be redirected to `/setup` on first run
@@ -117,7 +117,7 @@ chmod +x routelens
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -142,7 +142,7 @@ RS_PROBE_INTERVAL=60
 
 ---
 
-## 🔄 In-App Updates
+## In-App Updates
 
 RouteLens supports seamless self-updates directly from the web UI:
 
@@ -157,7 +157,7 @@ RouteLens supports seamless self-updates directly from the web UI:
 
 ---
 
-## 🛠 Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -179,7 +179,7 @@ flowchart LR
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 .
@@ -197,7 +197,7 @@ flowchart LR
 
 ---
 
-## 🔨 Development
+## Development
 
 ### Build from Source
 
@@ -230,7 +230,7 @@ make version
 
 ---
 
-## 🔐 Security
+## Security
 
 RouteLens includes comprehensive security hardening:
 
@@ -244,6 +244,6 @@ RouteLens includes comprehensive security hardening:
 
 ---
 
-## 📝 License
+## License
 
 [MIT License](LICENSE) — Free for personal and commercial use.
