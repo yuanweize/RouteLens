@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/yuanweize/RouteLens/compare/v2.2.5...v2.3.0) (2026-09-11)
+
+
+### Features
+
+* comprehensive UI/UX modernization, spatial clustering, security hardening and documentation refresh ([a5094e9](https://github.com/yuanweize/RouteLens/commit/a5094e9823e9b1b3d4409632ed9fe4b9ac378d52))
+
 ## [2.2.5](https://github.com/yuanweize/RouteLens/compare/v2.2.4...v2.2.5) (2026-02-13)
 
 
