@@ -18,7 +18,17 @@ func NewHTTPSpeedTester(url string) *HTTPSpeedTester {
 func (h *HTTPSpeedTester) Run() (*SpeedResult, error) {
 	start := time.Now()
 
-	resp, err := http.Get(h.URL)
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", h.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("invalid http url: %w", err)
+	}
+	req.Header.Set("User-Agent", "RouteLens-SpeedTester")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http get failed: %w", err)
 	}
@@ -28,9 +38,10 @@ func (h *HTTPSpeedTester) Run() (*SpeedResult, error) {
 		return nil, fmt.Errorf("http returned status: %s", resp.Status)
 	}
 
-	// Read body to measure speed
-	// We use io.Discard to avoid memory overhead
-	n, err := io.Copy(io.Discard, resp.Body)
+	// Read body to measure speed (limit to max 50MB to prevent DoS/infinite streams)
+	maxBytes := int64(50 * 1024 * 1024)
+	limitedReader := io.LimitReader(resp.Body, maxBytes)
+	n, err := io.Copy(io.Discard, limitedReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read body: %w", err)
 	}

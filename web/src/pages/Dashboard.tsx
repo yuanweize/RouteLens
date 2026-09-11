@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Col, Row, Statistic, Select, Typography, Collapse, Table, Tag, Space, Tooltip } from 'antd';
+import { Card, Col, Row, Statistic, Select, Typography, Table, Tag, Space, Tooltip } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
@@ -108,11 +108,25 @@ const Dashboard: React.FC = () => {
     }
   );
 
-  const avgLatency = history.length
-    ? history.reduce((sum: number, h: any) => sum + (h.latency_ms || h.LatencyMs || 0), 0) / history.length
+  // Filter out pure speed records (which have 0ms latency and 0% loss) from ping stats
+  const pingRecords = useMemo(() => {
+    return history.filter((h: any) => {
+      const lat = h.latency_ms ?? h.LatencyMs ?? 0;
+      const loss = h.packet_loss ?? h.PacketLoss ?? 0;
+      const down = h.speed_down ?? h.SpeedDown ?? 0;
+      const up = h.speed_up ?? h.SpeedUp ?? 0;
+      if ((down > 0 || up > 0) && lat === 0 && loss === 0) {
+        return false;
+      }
+      return true;
+    });
+  }, [history]);
+
+  const avgLatency = pingRecords.length
+    ? pingRecords.reduce((sum: number, h: any) => sum + (h.latency_ms || h.LatencyMs || 0), 0) / pingRecords.length
     : 0;
-  const avgLoss = history.length
-    ? history.reduce((sum: number, h: any) => sum + (h.packet_loss || h.PacketLoss || 0), 0) / history.length
+  const avgLoss = pingRecords.length
+    ? pingRecords.reduce((sum: number, h: any) => sum + (h.packet_loss || h.PacketLoss || 0), 0) / pingRecords.length
     : 0;
   
   // Find the most recent record with speed data (speed tests run less frequently than pings)
@@ -276,17 +290,17 @@ const Dashboard: React.FC = () => {
       </Row>
 
       <Row gutter={[16, 16]}>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Card className="page-card" style={{ height: 120 }}>
             <Statistic title={t('dashboard.avgLatency')} value={avgLatency} suffix="ms" precision={1} />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Card className="page-card" style={{ height: 120 }}>
             <Statistic title={t('dashboard.packetLoss')} value={avgLoss} suffix="%" precision={2} />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Card className="page-card" style={{ height: 120 }}>
             <div style={{ marginBottom: 8 }}>
               <Typography.Text type="secondary" style={{ fontSize: 14 }}>
@@ -323,7 +337,7 @@ const Dashboard: React.FC = () => {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={16}>
+        <Col xs={24} xl={15}>
           <Card
             className="chart-card"
             title={t('dashboard.routeMap')}
@@ -338,34 +352,8 @@ const Dashboard: React.FC = () => {
           >
             <MapChart trace={trace} isDark={isDark} />
           </Card>
-          <Card className="chart-card" style={{ marginTop: 16 }}>
-            <Collapse
-              defaultActiveKey={['hops']}
-              items={[
-                {
-                  key: 'hops',
-                  label: (
-                    <Space>
-                      <span>{t('dashboard.mtrHopDetails')}</span>
-                      {traceData?.truncated ? <Tag color="orange">{t('dashboard.truncated')}</Tag> : null}
-                    </Space>
-                  ),
-                  children: (
-                    <Table
-                      size="small"
-                      dataSource={hopRows}
-                      pagination={false}
-                      columns={hopColumns}
-                      rowClassName={(row: HopRow) => (row.isTimeout ? 'hop-timeout-row' : '')}
-                      scroll={{ x: 900 }}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} xl={9}>
           <Card 
             className="chart-card" 
             title={t('dashboard.historicalMetrics')}
@@ -399,6 +387,30 @@ const Dashboard: React.FC = () => {
             }
           >
             <MetricsChart history={history} isDark={isDark} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col span={24}>
+          <Card 
+            className="chart-card"
+            title={
+              <Space>
+                <span>{t('dashboard.mtrHopDetails')}</span>
+                {hopRows.length > 0 && <Tag color="blue">{hopRows.length} {t('hopTable.hop') || 'Hops'}</Tag>}
+                {traceData?.truncated ? <Tag color="orange">{t('dashboard.truncated')}</Tag> : null}
+              </Space>
+            }
+          >
+            <Table
+              size="small"
+              dataSource={hopRows}
+              pagination={false}
+              columns={hopColumns}
+              rowClassName={(row: HopRow) => (row.isTimeout ? 'hop-timeout-row' : '')}
+              scroll={{ x: 900 }}
+            />
           </Card>
         </Col>
       </Row>

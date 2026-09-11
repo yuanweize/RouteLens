@@ -15,6 +15,14 @@ import Settings from './pages/Settings';
 import About from './pages/About';
 import Logs from './pages/Logs';
 
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -52,6 +60,17 @@ const App: React.FC = () => {
 
   const algorithm = useMemo(() => (isDark ? theme.darkAlgorithm : theme.defaultAlgorithm), [isDark]);
 
+  const themeConfig = useMemo(() => ({
+    algorithm,
+    token: {
+      colorPrimary: '#3b82f6',
+      borderRadius: 8,
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      colorBgContainer: isDark ? '#1e293b' : '#ffffff',
+      colorBgLayout: isDark ? '#0f172a' : '#f8fafc',
+    },
+  }), [algorithm, isDark]);
+
   // Determine Ant Design locale based on i18n language
   const antdLocale = useMemo(() => {
     const lang = i18n.language;
@@ -64,7 +83,7 @@ const App: React.FC = () => {
   const toggleTheme = () => setIsDark((prev) => !prev);
 
   return (
-    <ConfigProvider theme={{ algorithm }} locale={antdLocale}>
+    <ConfigProvider theme={themeConfig} locale={antdLocale}>
       <ThemeProvider isDark={isDark} toggle={toggleTheme}>
         <Routes>
           <Route path="/setup" element={<Setup />} />
@@ -72,16 +91,18 @@ const App: React.FC = () => {
           <Route
             path="/*"
             element={
-              <AppLayout isDark={isDark} onToggleTheme={toggleTheme}>
-                <Routes>
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="targets" element={<Targets />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="logs" element={<Logs />} />
-                  <Route path="about" element={<About />} />
-                  <Route path="" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </AppLayout>
+              <ProtectedRoute>
+                <AppLayout isDark={isDark} onToggleTheme={toggleTheme}>
+                  <Routes>
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="targets" element={<Targets />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="logs" element={<Logs />} />
+                    <Route path="about" element={<About />} />
+                    <Route path="" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
             }
           />
         </Routes>

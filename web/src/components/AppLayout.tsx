@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Layout, Menu, Typography, Space, Switch, Button, Dropdown, Alert, Modal, Progress, message } from 'antd';
+import { Layout, Menu, Typography, Space, Switch, Button, Dropdown, Alert, Modal, Progress, message, Drawer } from 'antd';
 import {
   DashboardOutlined,
   DeploymentUnitOutlined,
@@ -11,6 +11,8 @@ import {
   FileTextOutlined,
   GlobalOutlined,
   CloudDownloadOutlined,
+  MenuOutlined,
+  RadarChartOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +37,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, isDark, onToggleTheme }
   const [updating, setUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Track window resize for responsive layout
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch system info and check for updates on mount
   useEffect(() => {
@@ -107,6 +120,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, isDark, onToggleTheme }
     { key: '/about', icon: <InfoCircleOutlined />, label: t('nav.about') },
   ];
 
+  const handleMenuClick = (key: string) => {
+    navigate(key);
+    if (isMobile) {
+      setMobileDrawerOpen(false);
+    }
+  };
+
   const languageMenu = {
     items: [
       { key: 'en', label: '🇺🇸 English' },
@@ -115,30 +135,91 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, isDark, onToggleTheme }
     onClick: ({ key }: { key: string }) => changeLanguage(key),
   };
 
+  const brandHeader = (
+    <div style={{ padding: '18px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontSize: 18,
+        flexShrink: 0,
+        boxShadow: '0 4px 12px rgba(22, 119, 255, 0.3)'
+      }}>
+        <RadarChartOutlined />
+      </div>
+      <div>
+        <Typography.Title level={5} style={{ margin: 0, lineHeight: 1.2, fontWeight: 600 }}>
+          {t('common.appName')}
+        </Typography.Title>
+        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+          {systemInfo?.version ? `v${systemInfo.version}` : t('common.version')}
+        </Typography.Text>
+      </div>
+    </div>
+  );
+
   return (
     <Layout className="app-shell">
-      <Sider theme={isDark ? 'dark' : 'light'} width={220}>
-        <div style={{ padding: 20 }}>
-          <Typography.Title level={4} style={{ margin: 0, color: isDark ? '#fff' : '#111' }}>
-            {t('common.appName')}
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {systemInfo?.version || t('common.version')}
-          </Typography.Text>
-        </div>
+      {/* Desktop Sider */}
+      {!isMobile && (
+        <Sider 
+          theme={isDark ? 'dark' : 'light'} 
+          width={220}
+          style={{
+            borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)'
+          }}
+        >
+          {brandHeader}
+          <Menu
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={(item) => handleMenuClick(item.key)}
+            style={{ borderRight: 0 }}
+          />
+        </Sider>
+      )}
+
+      {/* Mobile Drawer Navigation */}
+      <Drawer
+        placement="left"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        width={260}
+        bodyStyle={{ padding: 0 }}
+      >
+        {brandHeader}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          onClick={(item) => navigate(item.key)}
+          onClick={(item) => handleMenuClick(item.key)}
+          style={{ borderRight: 0 }}
         />
-      </Sider>
+      </Drawer>
+
       <Layout>
-        <Header style={{ background: 'transparent', padding: '0 24px' }}>
+        <Header style={{ background: 'transparent', padding: isMobile ? '0 12px' : '0 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-            <Typography.Title level={5} style={{ margin: 0 }}>{t('dashboard.console')}</Typography.Title>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {isMobile && (
+                <Button
+                  icon={<MenuOutlined />}
+                  onClick={() => setMobileDrawerOpen(true)}
+                  style={{ marginRight: 4 }}
+                />
+              )}
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                {t('dashboard.console')}
+              </Typography.Title>
+            </div>
             <div className="header-actions">
-              <Space>
+              <Space size={isMobile ? 'small' : 'middle'}>
                 <Dropdown menu={languageMenu} placement="bottomRight">
                   <Button icon={<GlobalOutlined />}>
                     {i18n.language === 'zh-CN' ? '中文' : 'EN'}
@@ -150,7 +231,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, isDark, onToggleTheme }
                   checkedChildren={<MoonOutlined />}
                   unCheckedChildren={<SunOutlined />}
                 />
-                <Button icon={<LogoutOutlined />} onClick={onLogout}>{t('common.logout')}</Button>
+                <Button icon={<LogoutOutlined />} onClick={onLogout}>
+                  {!isMobile && t('common.logout')}
+                </Button>
               </Space>
             </div>
           </div>

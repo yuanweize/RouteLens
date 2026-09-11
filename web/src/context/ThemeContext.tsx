@@ -3,6 +3,7 @@ import React, { createContext, useContext } from 'react';
 interface ThemeContextValue {
   isDark: boolean;
   toggle: () => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -12,7 +13,7 @@ export const ThemeProvider: React.FC<{ isDark: boolean; toggle: () => void; chil
   toggle,
   children,
 }) => {
-  return <ThemeContext.Provider value={{ isDark, toggle }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ isDark, toggle, toggleTheme: toggle }}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {

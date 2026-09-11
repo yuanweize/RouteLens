@@ -1,6 +1,7 @@
 package prober
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -67,10 +68,16 @@ func (r *MTRRunner) Run() (*MTRResult, error) {
 		count = 10
 	}
 
-	// SECURITY: Using argument separation (not shell string concatenation)
-	cmd := exec.Command("mtr", "--json", "-c", fmt.Sprintf("%d", count), r.Target)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// SECURITY: Using argument separation (not shell string concatenation) with timeout protection
+	cmd := exec.CommandContext(ctx, "mtr", "--json", "-c", fmt.Sprintf("%d", count), r.Target)
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("mtr execution timed out after 30s")
+		}
 		return nil, fmt.Errorf("mtr execution failed: %w", err)
 	}
 

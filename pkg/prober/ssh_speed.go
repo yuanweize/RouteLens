@@ -3,7 +3,6 @@ package prober
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -19,7 +18,6 @@ type SSHConfig struct {
 	Port      int
 	User      string
 	Password  string
-	KeyPath   string
 	KeyText   string
 	Timeout   time.Duration
 	TestBytes int64 // How many bytes to test. If 0, uses DefaultTestSize
@@ -102,15 +100,6 @@ func (s *SSHSpeedTester) connect() (*ssh.Client, error) {
 		signer, err := ssh.ParsePrivateKey([]byte(s.config.KeyText))
 		if err == nil {
 			auths = append(auths, ssh.PublicKeys(signer))
-		}
-	}
-	if s.config.KeyPath != "" {
-		key, err := os.ReadFile(s.config.KeyPath)
-		if err == nil {
-			signer, err := ssh.ParsePrivateKey(key)
-			if err == nil {
-				auths = append(auths, ssh.PublicKeys(signer))
-			}
 		}
 	}
 

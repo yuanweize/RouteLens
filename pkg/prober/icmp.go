@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 )
 
 type ICMPPinger struct {
@@ -29,20 +30,30 @@ func NewICMPPinger(target string, count int) *ICMPPinger {
 }
 
 func (p *ICMPPinger) Run() (*PingResult, error) {
-	dst, err := net.ResolveIPAddr("ip4", p.Target)
+	dst, err := net.ResolveIPAddr("ip", p.Target)
 	if err != nil {
 		return nil, err
 	}
 
+	isIPv4 := dst.IP.To4() != nil
 	network := "udp4"
+	listenAddr := "0.0.0.0"
+	if !isIPv4 {
+		network = "udp6"
+		listenAddr = "::"
+	}
 	if p.Privileged {
-		network = "ip4:icmp"
+		if isIPv4 {
+			network = "ip4:icmp"
+		} else {
+			network = "ip6:ipv6-icmp"
+		}
 	}
 
-	c, err := icmp.ListenPacket(network, "0.0.0.0")
+	c, err := icmp.ListenPacket(network, listenAddr)
 	if err != nil {
 		// Fallback suggestion in error
-		return nil, fmt.Errorf("listen packet failed (privileged=%v): %w", p.Privileged, err)
+		return nil, fmt.Errorf("listen packet failed (privileged=%v, network=%s): %w", p.Privileged, network, err)
 	}
 	defer c.Close()
 
@@ -52,13 +63,11 @@ func (p *ICMPPinger) Run() (*PingResult, error) {
 	// Loop for Count
 	for i := 0; i < p.Count; i++ {
 		sent++
-		rtt, err := p.sendPing(c, dst, i+1)
+		rtt, err := p.sendPing(c, dst, isIPv4, i+1)
 
 		if err == nil {
 			recv++
 			rtts = append(rtts, rtt)
-		} else {
-			// fmt.Printf("Ping error: %v\n", err) // Debug logging
 		}
 
 		if i < p.Count-1 {
@@ -69,9 +78,14 @@ func (p *ICMPPinger) Run() (*PingResult, error) {
 	return p.calculateStats(sent, recv, rtts), nil
 }
 
-func (p *ICMPPinger) sendPing(c *icmp.PacketConn, dst *net.IPAddr, seq int) (time.Duration, error) {
+func (p *ICMPPinger) sendPing(c *icmp.PacketConn, dst *net.IPAddr, isIPv4 bool, seq int) (time.Duration, error) {
+	var msgType icmp.Type = ipv4.ICMPTypeEcho
+	if !isIPv4 {
+		msgType = ipv6.ICMPTypeEchoRequest
+	}
+
 	wm := icmp.Message{
-		Type: ipv4.ICMPTypeEcho, Code: 0,
+		Type: msgType, Code: 0,
 		Body: &icmp.Echo{
 			ID: os.Getpid() & 0xffff, Seq: seq,
 			Data: []byte("RouteLens-Ping"),
@@ -111,15 +125,19 @@ func (p *ICMPPinger) sendPing(c *icmp.PacketConn, dst *net.IPAddr, seq int) (tim
 
 	duration := time.Since(start)
 
-	// Parse reply
-	rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), reply[:n])
+	// Protocol number for ICMP parsing
+	protoNum := ipv4.ICMPTypeEchoReply.Protocol()
+	if !isIPv4 {
+		protoNum = 58 // IPv6-ICMP
+	}
+
+	rm, err := icmp.ParseMessage(protoNum, reply[:n])
 	if err != nil {
 		return 0, err
 	}
 
 	switch rm.Type {
-	case ipv4.ICMPTypeEchoReply:
-		// Check ID/Seq if needed for strict matching, but for simple ping it's okay
+	case ipv4.ICMPTypeEchoReply, ipv6.ICMPTypeEchoReply:
 		return duration, nil
 	default:
 		return 0, fmt.Errorf("got non-echo reply: %+v", rm)

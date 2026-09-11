@@ -120,12 +120,19 @@ func runTrace(target string) {
 func runSpeed(host string, port int, user, pass, key string) {
 	fmt.Printf("Running SSH Speed Test to %s:%d (User: %s)...\n", host, port, user)
 
+	var keyText string
+	if key != "" {
+		if data, err := os.ReadFile(key); err == nil {
+			keyText = string(data)
+		}
+	}
+
 	cfg := prober.SSHConfig{
 		Host:     host,
 		Port:     port,
 		User:     user,
 		Password: pass,
-		KeyPath:  key,
+		KeyText:  keyText,
 		Timeout:  10 * time.Second,
 	}
 

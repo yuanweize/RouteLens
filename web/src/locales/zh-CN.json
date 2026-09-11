@@ -97,8 +97,10 @@
   "settings": {
     "title": "系统设置",
     "changePassword": "修改密码",
+    "oldPassword": "当前旧密码",
+    "oldPasswordRequired": "请输入当前旧密码",
     "newPassword": "新密码",
-    "confirmPassword": "确认密码",
+    "confirmPassword": "确认新密码",
     "passwordMismatch": "两次输入的密码不一致",
     "passwordUpdated": "密码修改成功",
     "theme": "主题",
@@ -221,17 +223,23 @@
   },
   "login": {
     "title": "登录",
+    "welcome": "欢迎使用 RouteLens",
+    "subtitle": "现代网络观测与路由可视化控制台",
     "username": "用户名",
     "password": "密码",
-    "submit": "登录",
+    "submit": "登 录",
     "invalidCredentials": "用户名或密码错误"
   },
   "setup": {
     "title": "初始化设置",
-    "subtitle": "创建管理员账户",
+    "welcome": "欢迎使用 RouteLens",
+    "subtitle": "创建您的管理员账户以初始化系统",
     "username": "管理员用户名",
     "password": "管理员密码",
-    "submit": "完成设置"
+    "confirmPassword": "确认管理员密码",
+    "passwordMismatch": "两次输入的密码不一致",
+    "submit": "完成设置并开始体验",
+    "success": "管理员初始化成功，正在前往控制台..."
   },
   "about": {
     "title": "关于",

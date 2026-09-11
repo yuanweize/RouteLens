@@ -84,6 +84,7 @@ type Server struct {
 
 func NewServer(db *storage.DB, mon *monitor.Service, distFS fs.FS, dbPath string) *Server {
 	r := gin.Default()
+	_ = r.SetTrustedProxies(nil)
 	s := &Server{
 		router:  r,
 		db:      db,
@@ -96,6 +97,27 @@ func NewServer(db *storage.DB, mon *monitor.Service, distFS fs.FS, dbPath string
 			PingInterval:      30,
 		},
 	}
+
+	// Load persisted settings from DB if available
+	if retStr := db.GetSetting("retention_days", ""); retStr != "" {
+		if v, err := strconv.Atoi(retStr); err == nil && v > 0 {
+			s.settings.RetentionDays = v
+		}
+	}
+	if speedStr := db.GetSetting("speed_test_interval_minutes", ""); speedStr != "" {
+		if v, err := strconv.Atoi(speedStr); err == nil && v > 0 {
+			s.settings.SpeedTestInterval = v
+		}
+	}
+	if pingStr := db.GetSetting("ping_interval_seconds", ""); pingStr != "" {
+		if v, err := strconv.Atoi(pingStr); err == nil && v >= 10 {
+			s.settings.PingInterval = v
+		}
+	}
+	if mon != nil {
+		mon.UpdateIntervals(s.settings.PingInterval, s.settings.SpeedTestInterval)
+	}
+
 	s.setupRoutes()
 	return s
 }
@@ -155,12 +177,24 @@ func (s *Server) setupRoutes() {
 			c.Next()
 		}).StaticFS("/", http.FS(assetsFS))
 
-		// SPA Fallback: All other non-API routes serve index.html
+		// SPA Fallback: All other non-API routes serve file from dist if exists, else index.html
 		s.router.NoRoute(func(c *gin.Context) {
 			path := c.Request.URL.Path
 			if strings.HasPrefix(path, "/api") {
 				c.JSON(http.StatusNotFound, gin.H{"error": "API route not found"})
 				return
+			}
+
+			// Check if file exists in dist root (e.g. /world.json, /vite.svg, /favicon.ico)
+			relPath := strings.TrimPrefix(path, "/")
+			if relPath != "" && relPath != "index.html" {
+				if f, err := dist.Open(relPath); err == nil {
+					_ = f.Close()
+					if stat, err := fs.Stat(dist, relPath); err == nil && !stat.IsDir() {
+						c.FileFromFS(relPath, http.FS(dist))
+						return
+					}
+				}
 			}
 
 			// Load index.html from embedded FS
@@ -305,24 +339,35 @@ func (s *Server) handleSetup(c *gin.Context) {
 
 func (s *Server) handleUpdatePassword(c *gin.Context) {
 	var req struct {
+		OldPassword string `json:"old_password"`
 		NewPassword string `json:"new_password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
-	// Validate password
+	if req.OldPassword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Current password is required"})
+		return
+	}
+
+	// Validate new password
 	if len(req.NewPassword) < 6 || len(req.NewPassword) > 72 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be 6-72 characters"})
 		return
 	}
 
 	// Get the first (and only) user in the system
-	// This is a single-user system, so we update the only existing user
 	user, err := s.db.GetFirstUser()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No user found in system"})
+		return
+	}
+
+	// SECURITY: Verify current password
+	if !auth.ComparePassword(user.Password, req.OldPassword) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Current password is incorrect"})
 		return
 	}
 
@@ -339,7 +384,7 @@ func (s *Server) handleUpdatePassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Password updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
 }
 
 func (s *Server) handleStatus(c *gin.Context) {
@@ -352,25 +397,14 @@ func (s *Server) handleStatus(c *gin.Context) {
 
 	status := make([]gin.H, 0, len(targets))
 	for _, t := range targets {
-		rec, recErr := s.db.GetLatestRecord(t.Address)
-		if recErr != nil {
-			status = append(status, gin.H{
-				"target":     t,
-				"latency":    0,
-				"loss":       0,
-				"speed_down": 0,
-				"speed_up":   0,
-				"updated_at": nil,
-			})
-			continue
-		}
+		st := s.db.GetLatestStatus(t.Address)
 		status = append(status, gin.H{
 			"target":     t,
-			"latency":    rec.LatencyMs,
-			"loss":       rec.PacketLoss,
-			"speed_down": rec.SpeedDown,
-			"speed_up":   rec.SpeedUp,
-			"updated_at": rec.CreatedAt,
+			"latency":    st.Latency,
+			"loss":       st.Loss,
+			"speed_down": st.SpeedDown,
+			"speed_up":   st.SpeedUp,
+			"updated_at": st.UpdatedAt,
 		})
 	}
 
@@ -703,8 +737,18 @@ func (s *Server) handleSaveSettings(c *gin.Context) {
 	}
 
 	s.settings = req
-	// TODO: Persist settings to database or config file
-	logging.Info("settings", "Settings updated: retention=%d days, speed=%d min, ping=%d sec",
+
+	// Persist settings to database
+	_ = s.db.SetSetting("retention_days", strconv.Itoa(req.RetentionDays))
+	_ = s.db.SetSetting("speed_test_interval_minutes", strconv.Itoa(req.SpeedTestInterval))
+	_ = s.db.SetSetting("ping_interval_seconds", strconv.Itoa(req.PingInterval))
+
+	// Dynamically update prober ticker intervals
+	if s.monitor != nil {
+		s.monitor.UpdateIntervals(req.PingInterval, req.SpeedTestInterval)
+	}
+
+	logging.Info("settings", "Settings updated and persisted: retention=%d days, speed=%d min, ping=%d sec",
 		req.RetentionDays, req.SpeedTestInterval, req.PingInterval)
 	c.JSON(http.StatusOK, s.settings)
 }
@@ -772,13 +816,13 @@ func (s *Server) handleUpdateGeoIP(c *gin.Context) {
 		return
 	}
 
-	// Download from DB-IP City Lite - has better China IP accuracy than MaxMind
-	// Source: https://github.com/sapics/ip-location-db (updates monthly)
-	downloadURL := "https://raw.githubusercontent.com/sapics/ip-location-db/main/dbip-city-mmdb/dbip-city-ipv4.mmdb"
+	// Download GeoLite2-City database
+	downloadURL := "https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb"
 
 	logging.Info("geoip", "Downloading GeoIP database from %s", downloadURL)
 
-	resp, err := http.Get(downloadURL)
+	client := &http.Client{Timeout: 90 * time.Second}
+	resp, err := client.Get(downloadURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Download failed: %v", err)})
 		return
@@ -814,6 +858,10 @@ func (s *Server) handleUpdateGeoIP(c *gin.Context) {
 	}
 
 	logging.Info("geoip", "GeoIP database updated successfully: %s (%s)", geoipPath, formatBytes(written))
+
+	if s.monitor != nil {
+		s.monitor.ReloadGeoProvider()
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":    true,

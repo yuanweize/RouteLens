@@ -32,16 +32,15 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Agentless Monitoring** | Ping, MTR traceroute, and SSH-based bandwidth testing — no agents required on targets |
-| **Auto-Update** | One-click in-app upgrade mechanism (AdGuard Home style) |
-| **Secure by Default** | JWT authentication, login rate limiting (5/min), input sanitization |
-| **Modern UI** | React 19 + Ant Design v5 with automatic dark mode |
-| **Precision GeoIP** | CLDR country names + ip2region for China with 3000+ city coordinates |
-| **Historical Metrics** | Time-series charts for latency, packet loss, and bandwidth trends |
-| **Single Binary** | Zero dependencies, one-file deployment with systemd support |
-| **Smart Map** | Auto-zoom to fit route, auto-refresh with countdown indicator |
-| **Target Control** | Enable/disable monitoring targets without deletion |
-| **i18n Ready** | Full Chinese/English support with proper localized place names |
+| **Agentless Monitoring** | High-precision ICMP ping, full MTR traceroute, and SSH-based bandwidth probing — zero target agents needed |
+| **Spatial Clustering Map** | Intelligent Geo-clustering for transit hops, anti-collision labels, dark glassmorphism styling, and dynamic pulse arcs |
+| **Full MTR Hop Observability** | Complete breakdown of every hop: IP/hostname, geo location, ISP/carrier, ASN, packet loss, and latency quartiles (Last/Avg/Best/Worst) |
+| **Secure by Design** | Strict JWT authentication, brute-force rate limiter (5/min), in-memory SSH keys, original password verification, and command injection guards |
+| **Precision GeoIP Dual-Engine**| MaxMind GeoLite2 City + ip2region for sub-city accuracy across 3,000+ cities with mirror fallback |
+| **Historical Metrics & Telemetry**| Time-series charts for latency, loss rate, and bandwidth trends with synchronized auto-refresh |
+| **Single Binary Delivery** | Embedded SPA assets, pure Go SQLite driver, zero runtime CGO dependencies, systemd ready |
+| **In-App Self Upgrade** | One-click binary hot upgrade from GitHub Releases (AdGuard Home style) |
+| **Dual Language Ready** | Seamless English and Chinese UI localization with native city and province translations |
 
 ---
 

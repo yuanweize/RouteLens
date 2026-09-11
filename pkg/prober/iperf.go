@@ -1,6 +1,7 @@
 package prober
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -30,12 +31,18 @@ func (p *IperfProber) Run() (*SpeedResult, error) {
 		return nil, fmt.Errorf("invalid port: must be between 1 and 65535")
 	}
 
-	// SECURITY: Using argument separation (not shell string concatenation)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// SECURITY: Using argument separation (not shell string concatenation) with timeout protection
 	// Execute: iperf3 -c <target> -p <port> -J -t 5
 	// -J is for JSON output
-	cmd := exec.Command("iperf3", "-c", p.Target, "-p", fmt.Sprintf("%d", p.Port), "-J", "-t", "5")
+	cmd := exec.CommandContext(ctx, "iperf3", "-c", p.Target, "-p", fmt.Sprintf("%d", p.Port), "-J", "-t", "5")
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("iperf3 execution timed out after 30s")
+		}
 		return nil, fmt.Errorf("iperf3 execution failed: %w", err)
 	}
 

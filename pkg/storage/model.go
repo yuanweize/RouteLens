@@ -60,3 +60,11 @@ const (
 	ProbeModeSSH   = "MODE_SSH"
 	ProbeModeIPERF = "MODE_IPERF"
 )
+
+// SystemSetting stores system-wide configuration key-values
+type SystemSetting struct {
+	Key       string    `gorm:"primaryKey;type:varchar(64)" json:"key"`
+	Value     string    `gorm:"type:text;not null" json:"value"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+

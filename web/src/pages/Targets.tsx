@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Upload, message } from 'antd';
+import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Upload, message, Popconfirm } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +57,14 @@ const Targets: React.FC = () => {
       render: (_: any, record: Target) => (
         <Space>
           <Button type="link" onClick={() => onEdit(record)}>{t('common.edit')}</Button>
-          <Button type="link" danger onClick={() => onDelete(record.id)}>{t('common.delete')}</Button>
+          <Popconfirm
+            title={t('targets.confirmDelete') || 'Are you sure you want to delete this target?'}
+            onConfirm={() => onDelete(record.id)}
+            okText={t('common.yes')}
+            cancelText={t('common.no')}
+          >
+            <Button type="link" danger>{t('common.delete')}</Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -87,8 +94,8 @@ const Targets: React.FC = () => {
       http_url: parsedConfig.url || '',
       // SSH fields
       ssh_user: parsedConfig.user || 'root',
+      ssh_password: parsedConfig.password || '',
       ssh_port: parsedConfig.port || 22,
-      ssh_key_path: parsedConfig.key_path || '',
       ssh_key_text: parsedConfig.key_text || '',
       // iPerf fields
       iperf_port: parsedConfig.port || 5201,
@@ -126,7 +133,7 @@ const Targets: React.FC = () => {
       case 'MODE_SSH':
         return JSON.stringify({
           user: values.ssh_user || 'root',
-          key_path: values.ssh_key_path || '',
+          password: values.ssh_password || '',
           key_text: values.ssh_key_text || '',
           port: Number(values.ssh_port || 22),
         });
@@ -190,14 +197,14 @@ const Targets: React.FC = () => {
                     <Form.Item name="ssh_user" label={t('targets.sshUser')} rules={[{ required: true }]}>
                       <Input placeholder="root" />
                     </Form.Item>
+                    <Form.Item name="ssh_password" label={t('targets.sshPassword') || 'SSH Password (Optional)'}>
+                      <Input.Password placeholder="Password if not using private key" />
+                    </Form.Item>
                     <Form.Item name="ssh_port" label={t('targets.sshPort')}>
                       <Input placeholder="22" />
                     </Form.Item>
-                    <Form.Item name="ssh_key_path" label={t('targets.sshKeyPath')}>
-                      <Input placeholder="/root/.ssh/id_rsa" />
-                    </Form.Item>
                     <Form.Item name="ssh_key_text" label={t('targets.sshKeyText')}>
-                      <Input.TextArea rows={4} placeholder="Paste private key content" />
+                      <Input.TextArea rows={4} placeholder="Paste private key content (RSA/Ed25519)" />
                     </Form.Item>
                     <Upload beforeUpload={handleUpload} showUploadList={false}>
                       <Button icon={<UploadOutlined />}>{t('targets.uploadKey')}</Button>

@@ -81,7 +81,7 @@ const Logs: React.FC = () => {
         </Space>
       }
       extra={
-        <Space>
+        <Space wrap size={[8, 8]}>
           <Space size="small">
             <Typography.Text style={{ fontSize: 12 }}>{t('logs.autoRefresh')}</Typography.Text>
             <Switch
@@ -96,12 +96,13 @@ const Logs: React.FC = () => {
               percent={countdown}
               showInfo={false}
               size="small"
-              style={{ width: 60, marginLeft: 8 }}
+              style={{ width: 50 }}
               strokeColor="#1677ff"
             />
           )}
           <Select
-            style={{ width: 120 }}
+            size="small"
+            style={{ width: 110 }}
             value={levelFilter}
             onChange={setLevelFilter}
             options={[
@@ -113,7 +114,8 @@ const Logs: React.FC = () => {
             ]}
           />
           <Select
-            style={{ width: 100 }}
+            size="small"
+            style={{ width: 80 }}
             value={lines}
             onChange={setLines}
             options={[
@@ -123,7 +125,7 @@ const Logs: React.FC = () => {
               { label: '500', value: 500 },
             ]}
           />
-          <Button icon={<ReloadOutlined />} onClick={handleManualRefresh} loading={loading}>
+          <Button size="small" icon={<ReloadOutlined />} onClick={handleManualRefresh} loading={loading}>
             {t('logs.refresh')}
           </Button>
         </Space>

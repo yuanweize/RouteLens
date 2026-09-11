@@ -23,6 +23,7 @@ type Service struct {
 	db              *storage.DB
 	targets         []storage.Target
 	targetsMu       sync.RWMutex // Protects targets slice
+	inFlight        sync.Map     // Prevents concurrent probe stampede per target
 	pingTicker      *time.Ticker
 	speedTicker     *time.Ticker
 	refreshTicker   *time.Ticker
@@ -75,6 +76,18 @@ func (s *Service) Stop() {
 		s.geoProvider.Close()
 	}
 	close(s.stopChan)
+}
+
+// UpdateIntervals dynamically updates the ping and speed test intervals
+func (s *Service) UpdateIntervals(pingSeconds, speedMinutes int) {
+	if pingSeconds >= 10 && s.pingTicker != nil {
+		s.pingTicker.Reset(time.Duration(pingSeconds) * time.Second)
+		logging.Info("monitor", "Ping ticker interval updated to %ds", pingSeconds)
+	}
+	if speedMinutes >= 1 && s.speedTicker != nil {
+		s.speedTicker.Reset(time.Duration(speedMinutes) * time.Minute)
+		logging.Info("monitor", "Speed ticker interval updated to %dm", speedMinutes)
+	}
 }
 
 func (s *Service) runLoop() {
@@ -151,6 +164,13 @@ func (s *Service) runSpeedCycle() {
 }
 
 func (s *Service) runPingTraceForTarget(t storage.Target) {
+	key := "ping:" + t.Address
+	if _, loaded := s.inFlight.LoadOrStore(key, true); loaded {
+		logging.Debug("probe", "[Ping] Target %s already being probed, skipping", t.Address)
+		return
+	}
+	defer s.inFlight.Delete(key)
+
 	logging.Debug("probe", "[MTR] Starting probe for %s (%s)", t.Name, t.Address)
 
 	// 1. Ping (fallback latency)
@@ -199,6 +219,13 @@ func (s *Service) runPingTraceForTarget(t storage.Target) {
 }
 
 func (s *Service) runSpeedForTarget(t storage.Target) {
+	key := "speed:" + t.Address
+	if _, loaded := s.inFlight.LoadOrStore(key, true); loaded {
+		logging.Debug("speedtest", "[Speed] Target %s already being tested, skipping", t.Address)
+		return
+	}
+	defer s.inFlight.Delete(key)
+
 	var speedRes *prober.SpeedResult
 	var err error
 	var configErr error
@@ -320,7 +347,6 @@ func (s *Service) TriggerProbe(target string) {
 type sshProbeConfig struct {
 	User      string `json:"user"`
 	Password  string `json:"password"`
-	KeyPath   string `json:"key_path"`
 	KeyText   string `json:"key_text"`
 	Port      int    `json:"port"`
 	TestBytes int64  `json:"test_bytes"`
@@ -345,7 +371,6 @@ func parseSSHConfig(raw string) (prober.SSHConfig, error) {
 	sshCfg := prober.SSHConfig{
 		User:      cfg.User,
 		Password:  cfg.Password,
-		KeyPath:   cfg.KeyPath,
 		KeyText:   cfg.KeyText,
 		Port:      cfg.Port,
 		TestBytes: cfg.TestBytes,
@@ -519,7 +544,27 @@ func resolveGeoIPPaths() (cityDB, ispDB string) {
 	geoPath := os.Getenv("RS_GEOIP_PATH")
 
 	if geoPath == "" && cityDB == "" && ispDB == "" {
-		geoPath = filepath.Join("data", "geoip")
+		// Try candidate directories where GeoLite2-City.mmdb might already exist
+		candidates := []string{}
+		if dbPath := os.Getenv("RS_DB_PATH"); dbPath != "" {
+			candidates = append(candidates, filepath.Join(filepath.Dir(dbPath), "geoip"))
+		}
+		candidates = append(candidates, "/data/geoip", filepath.Join("data", "geoip"))
+
+		for _, candidate := range candidates {
+			if info, err := os.Stat(filepath.Join(candidate, "GeoLite2-City.mmdb")); err == nil && info.Size() > 0 {
+				geoPath = candidate
+				break
+			}
+		}
+
+		if geoPath == "" {
+			if dbPath := os.Getenv("RS_DB_PATH"); dbPath != "" {
+				geoPath = filepath.Join(filepath.Dir(dbPath), "geoip")
+			} else {
+				geoPath = filepath.Join("data", "geoip")
+			}
+		}
 	}
 
 	if geoPath == "" {
@@ -585,6 +630,19 @@ func initGeoProvider() *geoip.Provider {
 	return provider
 }
 
+// ReloadGeoProvider reloads the GeoIP provider after updates
+func (s *Service) ReloadGeoProvider() {
+	newProvider := initGeoProvider()
+	if newProvider != nil {
+		old := s.geoProvider
+		s.geoProvider = newProvider
+		if old != nil {
+			old.Close()
+		}
+		log.Println("[GeoIP] GeoIP provider reloaded successfully")
+	}
+}
+
 func downloadGeoIP(path string, url string) error {
 	if url == "" {
 		return fmt.Errorf("geoip download url missing")
@@ -592,7 +650,8 @@ func downloadGeoIP(path string, url string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 90 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return err
 	}
@@ -600,13 +659,24 @@ func downloadGeoIP(path string, url string) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("geoip download failed: %s", resp.Status)
 	}
-	file, err := os.Create(path)
+
+	tmpPath := path + ".tmp"
+	file, err := os.Create(tmpPath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 	_, err = io.Copy(file, resp.Body)
-	return err
+	file.Close()
+	if err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	return nil
 }
 
 func ensureGeoIPDatabase(path string) error {
@@ -616,10 +686,8 @@ func ensureGeoIPDatabase(path string) error {
 			return nil
 		}
 	}
-	// Use DB-IP City Lite database for non-China IPs
-	// Source: https://github.com/sapics/ip-location-db (updates monthly)
-	log.Printf("[GeoIP] Downloading DB-IP City Lite database...")
-	return downloadGeoIP(path, "https://raw.githubusercontent.com/sapics/ip-location-db/main/dbip-city-mmdb/dbip-city-ipv4.mmdb")
+	log.Printf("[GeoIP] Downloading GeoLite2-City database...")
+	return downloadGeoIP(path, "https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb")
 }
 
 // ensureIP2RegionDatabase ensures the ip2region xdb file exists for China IP lookup

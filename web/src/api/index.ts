@@ -27,7 +27,8 @@ export const checkNeedSetup = () => request.get<{ need_setup: boolean }>('/api/v
 
 export const setupAdmin = (data: { username: string; password: string }) => request.post('/api/v1/setup', data);
 
-export const updatePassword = (newPassword: string) => request.post('/api/v1/user/password', { new_password: newPassword });
+export const updatePassword = (data: { old_password?: string; new_password: string }) => 
+  request.post('/api/v1/user/password', data);
 
 export const getTargets = () => request.get<Target[]>('/api/v1/targets');
 

@@ -34,14 +34,22 @@ func NewDB(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to open sqlite: %w", err)
 	}
 
-	// Enable WAL Mode for better concurrency
-	// "PRAGMA journal_mode=WAL;"
+	// Enable WAL Mode and busy_timeout for concurrency protection
 	if res := db.Exec("PRAGMA journal_mode=WAL;"); res.Error != nil {
 		log.Printf("Warning: Failed to enable WAL mode: %v", res.Error)
 	}
+	if res := db.Exec("PRAGMA busy_timeout = 5000;"); res.Error != nil {
+		log.Printf("Warning: Failed to set busy_timeout: %v", res.Error)
+	}
+
+	// SQLite connection pool configuration for concurrency safety
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.SetMaxOpenConns(1)
+		sqlDB.SetMaxIdleConns(1)
+	}
 
 	// Auto Migrate
-	if err := db.AutoMigrate(&MonitorRecord{}, &Target{}, &User{}); err != nil {
+	if err := db.AutoMigrate(&MonitorRecord{}, &Target{}, &User{}, &SystemSetting{}); err != nil {
 		return nil, fmt.Errorf("migration failed: %w", err)
 	}
 

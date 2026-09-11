@@ -54,6 +54,78 @@ func (d *DB) GetLatestTrace(target string) (*MonitorRecord, error) {
 	return &r, err
 }
 
+// TargetStatus represents the merged latest probe metrics for a target
+type TargetStatus struct {
+	Latency   float64    `json:"latency"`
+	Loss      float64    `json:"loss"`
+	SpeedDown float64    `json:"speed_down"`
+	SpeedUp   float64    `json:"speed_up"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// GetLatestStatus retrieves the combined latest ping and speed metrics for a target
+func (d *DB) GetLatestStatus(target string) TargetStatus {
+	var status TargetStatus
+
+	// 1. Get latest ping/trace record
+	var pingRec MonitorRecord
+	if err := d.conn.
+		Where("target = ? AND speed_down = 0 AND speed_up = 0", target).
+		Order("created_at desc").
+		Limit(1).
+		First(&pingRec).Error; err == nil {
+		status.Latency = pingRec.LatencyMs
+		status.Loss = pingRec.PacketLoss
+		status.UpdatedAt = &pingRec.CreatedAt
+	}
+
+	// 2. Get latest speed record
+	var speedRec MonitorRecord
+	if err := d.conn.
+		Where("target = ? AND (speed_down > 0 OR speed_up > 0)", target).
+		Order("created_at desc").
+		Limit(1).
+		First(&speedRec).Error; err == nil {
+		status.SpeedDown = speedRec.SpeedDown
+		status.SpeedUp = speedRec.SpeedUp
+		if status.UpdatedAt == nil || speedRec.CreatedAt.After(*status.UpdatedAt) {
+			status.UpdatedAt = &speedRec.CreatedAt
+		}
+	}
+
+	// Fallback if neither found specifically
+	if status.UpdatedAt == nil {
+		if rec, err := d.GetLatestRecord(target); err == nil {
+			status.Latency = rec.LatencyMs
+			status.Loss = rec.PacketLoss
+			status.SpeedDown = rec.SpeedDown
+			status.SpeedUp = rec.SpeedUp
+			status.UpdatedAt = &rec.CreatedAt
+		}
+	}
+
+	return status
+}
+
+// GetSetting retrieves a setting value by key
+func (d *DB) GetSetting(key, defaultValue string) string {
+	var s SystemSetting
+	if err := d.conn.Where("key = ?", key).First(&s).Error; err != nil {
+		return defaultValue
+	}
+	return s.Value
+}
+
+// SetSetting saves or updates a setting
+func (d *DB) SetSetting(key, value string) error {
+	s := SystemSetting{
+		Key:       key,
+		Value:     value,
+		UpdatedAt: time.Now(),
+	}
+	return d.conn.Save(&s).Error
+}
+
 // --- Target Management ---
 
 // CreateTarget inserts a new target. Returns error if address already exists.

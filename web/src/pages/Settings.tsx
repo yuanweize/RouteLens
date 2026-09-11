@@ -37,12 +37,13 @@ const Settings: React.FC = () => {
   const [updatingGeoIP, setUpdatingGeoIP] = useState(false);
 
   const { run, loading } = useRequest(
-    async (values: { newPassword: string }) => updatePassword(values.newPassword),
+    async (values: { oldPassword?: string; newPassword: string }) => 
+      updatePassword({ old_password: values.oldPassword, new_password: values.newPassword }),
     {
       manual: true,
       onSuccess: () => {
         form.resetFields();
-        message.success('Password updated successfully');
+        message.success(t('settings.passwordUpdated') || 'Password updated successfully');
       },
     }
   );
@@ -435,6 +436,13 @@ const Settings: React.FC = () => {
       children: (
         <Card title={t('settings.changePassword')} style={{ maxWidth: 500 }}>
           <Form layout="vertical" form={form} onFinish={run}>
+            <Form.Item 
+              name="oldPassword" 
+              label={t('settings.oldPassword') || 'Current Password'} 
+              rules={[{ required: true, message: t('settings.oldPasswordRequired') || 'Please enter current password' }]}
+            >
+              <Input.Password placeholder={t('settings.oldPassword') || 'Current Password'} />
+            </Form.Item>
             <Form.Item name="newPassword" label={t('settings.newPassword')} rules={[{ required: true, min: 6 }]}>
               <Input.Password placeholder={t('settings.newPassword')} />
             </Form.Item>

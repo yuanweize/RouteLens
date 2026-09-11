@@ -97,8 +97,10 @@
   "settings": {
     "title": "System Settings",
     "changePassword": "Change Password",
+    "oldPassword": "Current Password",
+    "oldPasswordRequired": "Please enter your current password",
     "newPassword": "New Password",
-    "confirmPassword": "Confirm Password",
+    "confirmPassword": "Confirm New Password",
     "passwordMismatch": "Passwords do not match",
     "passwordUpdated": "Password updated successfully",
     "theme": "Theme",
@@ -221,17 +223,23 @@
   },
   "login": {
     "title": "Login",
+    "welcome": "Welcome to RouteLens",
+    "subtitle": "Modern Network Observability & Route Visualization",
     "username": "Username",
     "password": "Password",
-    "submit": "Login",
+    "submit": "Sign In",
     "invalidCredentials": "Invalid username or password"
   },
   "setup": {
     "title": "Initial Setup",
-    "subtitle": "Create your admin account",
+    "welcome": "Welcome to RouteLens",
+    "subtitle": "Create your admin account to initialize RouteLens",
     "username": "Admin Username",
     "password": "Admin Password",
-    "submit": "Complete Setup"
+    "confirmPassword": "Confirm Admin Password",
+    "passwordMismatch": "Passwords do not match",
+    "submit": "Complete Setup & Launch",
+    "success": "Admin account created successfully! Launching dashboard..."
   },
   "about": {
     "title": "About",
