@@ -44,6 +44,15 @@
 
 ---
 
+## Documentation & Technical Guides
+
+- 📘 **[Documentation Center](docs/index.md)**
+- 🌐 **[Monitoring Packet Loss & Jitter Between VPS Servers](docs/guides/monitor-vps-packet-loss.md)**
+- 🔍 **[Diagnosing Multi-Hop Network Latency and Route Flapping](docs/guides/diagnose-network-latency-multi-hop.md)**
+- 🛡️ **[Agentless Remote Network Monitoring via Secure Telemetry](docs/guides/agentless-remote-network-monitoring.md)**
+
+---
+
 ## Quick Start
 
 ### Option 1: Docker (Recommended)
