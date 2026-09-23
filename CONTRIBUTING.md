@@ -4,14 +4,16 @@ Thank you for your interest in contributing to RouteLens! We welcome bug reports
 
 ## Development Setup
 
-RouteLens is written in Go 1.24+ with a Vue/Vite frontend.
+RouteLens is written in Go 1.24+ with a React (Vite + Ant Design 5) web interface.
 
 ### Prerequisites
+
 - Go 1.24 or later
-- Node.js 20+ and npm (for web frontend assets)
+- Node.js 20.19+ or 22.12+ and npm (for web frontend assets)
 - Docker (optional, for containerized testing)
 
 ### Local Build
+
 ```bash
 # Clone the repository
 git clone https://github.com/yuanweize/RouteLens.git

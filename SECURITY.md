@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Only the latest stable release of RouteLens receives security updates.
+Only the latest stable release line (v2.3.x) of RouteLens receives security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
