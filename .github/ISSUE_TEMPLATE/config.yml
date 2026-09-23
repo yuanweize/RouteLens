@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Security Advisories
+    url: https://github.com/yuanweize/RouteLens/security/advisories/new
+    about: Please report security vulnerabilities privately here.
+  - name: Discussions & Questions
+    url: https://github.com/yuanweize/RouteLens/discussions
+    about: Please ask questions and discuss ideas in GitHub Discussions.
