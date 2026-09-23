@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0](https://github.com/yuanweize/RouteLens/compare/v2.3.0...v2.4.0) (2026-09-23)
+
+
+### Features
+
+* **community:** add dependabot configuration and issue forms ([#50](https://github.com/yuanweize/RouteLens/issues/50)) ([74ec09a](https://github.com/yuanweize/RouteLens/commit/74ec09ac66785e3c0975b48a1207e032290730aa))
+
+
+### Bug Fixes
+
+* **security:** add workflow permissions and update security SLA ([#55](https://github.com/yuanweize/RouteLens/issues/55)) ([ab1e814](https://github.com/yuanweize/RouteLens/commit/ab1e814c9af627ed1fd0e41934a7a14c376d9855))
+
 ## [2.3.0](https://github.com/yuanweize/RouteLens/compare/v2.2.5...v2.3.0) (2026-09-11)
 
 
